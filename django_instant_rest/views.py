@@ -195,5 +195,3 @@ def resource(model):
             return JsonResponse({"errors" : [unsupported_method_err]})
     return request_handler
 
-def error_response(error):
-    r
