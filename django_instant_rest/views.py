@@ -4,7 +4,7 @@ from . import serializers
 from .pagination import paginate, encode_cursor
 
 import json
-import dateutil.parser
+from datetime import datetime
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.fields import DateTimeField
@@ -44,8 +44,7 @@ def read_many(model):
             for field in date_fields(model):
                 if key.startswith(field):
                     try:
-                        naive_date = dateutil.parser.parse(params[key])
-                        params[key] = make_aware(naive_date)
+                        params[key] = datetime.fromisoformat(params[key])
                     except:
                         message = f"Invalid date string provided for field {key}"
                         invalid_date_err = { "message": message }
