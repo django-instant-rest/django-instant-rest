@@ -8,4 +8,7 @@ setup(name='django_instant_rest',
       author_email='',
       license='MIT',
       packages=['django_instant_rest'],
+      install_requires=[
+          'dateutil',
+      ],
       zip_safe=False)
