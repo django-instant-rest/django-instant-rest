@@ -89,12 +89,21 @@ def read_many(model):
 
         data = list(map(serializers.model_to_dict, page))
 
+        if len(page) is 0:
+            return JsonResponse({
+                'first_cursor': None,
+                'last_cursor': None,
+                'has_next_page': False,
+                'data': [],
+            })
+
         return JsonResponse({
             'first_cursor': encode_cursor(page[0]),
             'last_cursor': encode_cursor(page[-1]),
             'has_next_page': has_next_page,
             'data': data,
         })
+
     
     return request_handler
 
