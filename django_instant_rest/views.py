@@ -18,7 +18,7 @@ invalid_json_err = {"message" : "Request body is not valid json"}
 missing_id_err = {"message" : "Required id not provided"}
 invalid_data_err = {"message" : "Invalid data type received"}
 unsupported_method_err = {"message" : "Request method not supported by url"}
-invalid_paginagion_params_err = {"message" : "Invalid pagination parameters provided"}
+invalid_pagination_params_err = {"message" : "Invalid pagination parameters provided"}
 
 
 
