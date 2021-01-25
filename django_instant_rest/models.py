@@ -6,3 +6,7 @@ class TimeStampedModel(models.Model):
     class Meta:
         abstract = True
 
+#to dict serialization could be included
+#in this model to make objects json by default
+#name change would be rest-resource
+
