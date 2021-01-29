@@ -5,8 +5,8 @@ from django.urls import re_path
 
 # Create a urlpattern element that allows CRUD
 # operations for a given model. 
-def resource(name, model, suffix = '.json', middleware = None):
-    route = rf"{name}/(?P<id>\d+){suffix}|{name}{suffix}"
+def resource(name, model, middleware = None):
+    route = rf"{name}/(?P<id>\d+)|{name}"
 
     if not middleware:
         return re_path(route, views.resource(model))
