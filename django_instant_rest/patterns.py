@@ -29,11 +29,11 @@ def resource(name, model, middleware = None):
 
 # Create a request handler that allows REST clients to authenticate.
 # In the future, it may be associated with additional actions.
-def client(name, client_model, middleware=None, secret=''):
+def client(name, client_model, middleware=None):
     route = rf"^{name}/authenticate$"
 
     if not middleware:
-        return re_path(route, views.authenticate(client_model, secret))
+        return re_path(route, views.authenticate(client_model))
 
     # Using a django-style middleware callable
     # if it was provided as a function parameter.
@@ -41,7 +41,7 @@ def client(name, client_model, middleware=None, secret=''):
 
     def handler(request):
         def get_response(request):
-            return views.authenticate(client_model, secret)(request)
+            return views.authenticate(client_model)(request)
 
         middleware_callable = middleware(get_response)
         response = middleware_callable(request)

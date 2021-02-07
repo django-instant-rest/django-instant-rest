@@ -232,7 +232,7 @@ def resource(model):
     return request_handler
 
 
-def authenticate(client_model, secret):
+def authenticate(client_model):
     @csrf_exempt
     def handler(request):
         '''Allows requesters to provide username/password
@@ -246,10 +246,12 @@ def authenticate(client_model, secret):
 
         try:
             c = client_model.objects.get(username=credentials["username"])
-            c.verify_password(credentials["password"])
-            payload = { "contributor": { "id": c.id } }
-            encoded_jwt = jwt.encode(payload, secret, algorithm='HS256')
-            return JsonResponse({ "data": { "token": encoded_jwt } })
+            token = c.authenticate(credentials["password"])
+
+            if not token:
+                raise
+                
+            return JsonResponse({ "data": { "token": token } })
 
         except Exception as inst:
             message = "incorrect username/password combination"
