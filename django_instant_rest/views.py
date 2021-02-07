@@ -1,5 +1,4 @@
 
-
 from . import serializers
 from .pagination import paginate, encode_cursor
 
@@ -177,8 +176,20 @@ def update_one(model):
             obj.save()
             data = serializers.model_to_dict(obj)
             return JsonResponse({"data" : data})
-        except:
+
+        # Exposing Attribute errors, because they're end-user friendly
+        except AttributeError as inst:
+            error = { "message": str(inst) }
+            return JsonResponse({ "errors": [error] })
+        
+        except model.DoesNotExist:
+            # Handling attempts to edit non-existent objects
             return JsonResponse({"errors": [id_not_exists_err]})
+
+        except Exception as inst:
+            # Handling all other errors generically
+            return JsonResponse({"errors": [invalid_data_err]})
+
     return request_handler
 
 
@@ -218,4 +229,3 @@ def resource(model):
         else:
             return JsonResponse({"errors" : [unsupported_method_err]})
     return request_handler
-
