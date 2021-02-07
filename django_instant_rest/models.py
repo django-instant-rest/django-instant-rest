@@ -3,6 +3,7 @@ from django.db import models
 import datetime
 
 class RestResource(models.Model):
+    '''Represents a data type that is exposed by a REST API'''
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -29,6 +30,7 @@ class RestResource(models.Model):
 
 
 class RestClient(models.Model):
+    '''Represents a human or program that is a consumer of a REST API'''
     username = models.CharField(max_length=32, unique=True)
     password = models.CharField(max_length=512)
 
@@ -44,4 +46,4 @@ class RestClient(models.Model):
     def verify_password(self, password):
         '''Determine whether a given hashed password belongs
         to this model instance'''
-        return ph.verify(self.password, password)
+        return PasswordHasher().verify(self.password, password)

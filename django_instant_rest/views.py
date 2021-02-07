@@ -2,6 +2,7 @@
 from . import serializers
 from .pagination import paginate, encode_cursor
 
+import jwt
 import json
 from datetime import datetime
 from django.http import JsonResponse, HttpResponse
@@ -229,3 +230,29 @@ def resource(model):
         else:
             return JsonResponse({"errors" : [unsupported_method_err]})
     return request_handler
+
+
+def authenticate(client_model, secret):
+    @csrf_exempt
+    def handler(request):
+        '''Allows requesters to provide username/password
+        combinations in exchange for a json web token'''
+        try:
+            credentials = json.loads(request.body.decode("utf-8"))
+
+        except:
+            message = "expected POST request with json body"
+            return JsonResponse({ 'error': message }, status=400)
+
+        try:
+            c = client_model.objects.get(username=credentials["username"])
+            c.verify_password(credentials["password"])
+            payload = { "contributor": { "id": c.id } }
+            encoded_jwt = jwt.encode(payload, secret, algorithm='HS256')
+            return JsonResponse({ "data": { "token": encoded_jwt } })
+
+        except Exception as inst:
+            message = "incorrect username/password combination"
+            return JsonResponse({ 'error': message }, status=400)
+    
+    return handler
