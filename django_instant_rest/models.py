@@ -10,21 +10,30 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+    class Serializer:
+        hidden_fields = []
+
     def to_dict(self):
         '''Convert model instances to dictionaries'''
         result = {}
         for field in self._meta.fields:
+
+            # Skipping hidden fields
+            if field.name in self.Serializer.hidden_fields:
+                continue
+
             value = getattr(self, field.name)
 
-            #handles datetime fields
+            # Handling datetime fields
             if type(value) == datetime.datetime:
                 value = value.isoformat()
 
-            #handles relational fields 
+            # Handling relational fields 
             if hasattr(value, "id"):
                 value = value.id
             
             result[field.name] = value
+
         return result
 
 

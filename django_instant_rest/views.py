@@ -1,5 +1,4 @@
 
-from . import serializers
 from .pagination import paginate, encode_cursor
 
 import jwt
@@ -88,8 +87,7 @@ def read_many(model):
             
         page = list(pagination['page'])
         has_next_page = pagination['has_next_page']
-
-        data = list(map(serializers.model_to_dict, page))
+        data = list(map(lambda m: m.to_dict(), page))
 
         if len(page) is 0:
             return JsonResponse({
@@ -115,9 +113,11 @@ def read_one(model):
         try:
             obj = model.objects.get(id=id)
         except:
-            return JsonResponse({"errors": [id_not_exists_err]})
-        data = serializers.model_to_dict(obj)
-        return JsonResponse({"data": data})        
+            return JsonResponse({ "errors": [id_not_exists_err] })
+
+        data = obj.to_dict()
+        return JsonResponse({ "data": data })
+
     return request_handler
 
 
@@ -138,7 +138,7 @@ def create_one(model):
                     data[key] = related_model.objects.get(id = data[key])
 
             m = model.objects.create(**data)
-            data = serializers.model_to_dict(m)
+            data = m.to_dict()
             return JsonResponse({ "data" : data })
 
         # Exposing Attribute errors, because they're end-user friendly
@@ -175,7 +175,7 @@ def update_one(model):
                 setattr(obj, field_name, change_data[field_name])
 
             obj.save()
-            data = serializers.model_to_dict(obj)
+            data = obj.to_dict()
             return JsonResponse({"data" : data})
 
         # Exposing Attribute errors, because they're end-user friendly
@@ -200,10 +200,11 @@ def delete_one(model):
         try:
             obj = model.objects.get(id=id)
             obj.delete()
-            data = serializers.model_to_dict(obj)
-            return JsonResponse({"data" : data})
+            data = obj.to_dict()
+            return JsonResponse({ "data" : data })
         except:
-            return JsonResponse({"errors": [id_not_exists_err]})
+            return JsonResponse({ "errors": [id_not_exists_err] })
+
     return request_handler
 
 
