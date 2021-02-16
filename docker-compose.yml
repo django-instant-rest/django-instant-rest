@@ -7,7 +7,17 @@ services:
             context: 'tests/server'
         ports:
             - 4000:4000
+        networks:
+            - default
 
     client:
         build:
             context: 'tests/client'
+        environment:
+            - PYTHONUNBUFFERED=1
+        networks:
+            - default
+
+networks:
+    default:
+        driver: bridge
