@@ -75,6 +75,10 @@ class TestRunner():
     def __del__(self):
         '''When instances of the class are garbage collected, printing a message
         describing the results of the tests'''
+
+        if not self.start_time:
+            return
+
         seconds_elapsed = time.time() - self.start_time
         milliseconds_elapsed = seconds_elapsed * 1000
         print((
