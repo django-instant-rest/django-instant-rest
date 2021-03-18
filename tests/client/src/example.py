@@ -44,29 +44,37 @@ class TestCase():
     def run(self):
         pass
 
+class TestRunner():
+    tests = []
+    def add(self, test_case):
+        self.tests.append(test_case)
+    def run(self):
+        for test in self.tests:
+            test().run()
 
 def test():
-    class CustomTest(TestCase):
+    class PersonTest(TestCase):
         description = "Two people should be the same"
         bail_on_fail = False
 
-        # Setup function
-        def __init__(self):
-            pass
-
-        # Teardown function
-        def __del__(self):
-            print('Tearing everything down')
-
         def run(self):
             a = { "name": "john" }
-            b = { "name": "james" }
+            b = { "name": "john" }
             self.assert_equal(a, b)
 
-    ct = CustomTest()
-    ct.run()
 
-    dt = CustomTest()
-    dt.run()
+    class NumberTest(TestCase):
+        description = "Two numbers should be the same"
+        bail_on_fail = False
+
+        def run(self):
+            a = 5
+            b = 5
+            self.assert_equal(a, b)
+
+    runner = TestRunner()
+    runner.add(NumberTest)
+    runner.add(PersonTest)
+    runner.run()
 
 test()
