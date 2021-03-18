@@ -12,16 +12,56 @@ class DataMismatch(Exception):
         RESET = "\033[0m"
         
         return (
-            "\n"
             f"Expected: {GREEN}{str(self.expected)}{RESET}\n"
-            f"Received: {RED}{str(self.received)}{RESET}\n"
+            f"Received: {RED}{str(self.received)}{RESET}"
         )
 
+class TestCase():
+    bail_on_fail = False
+
+    def __init__(self):
+        pass
+
+    def assert_equal(self, expected, received):
+        exception = DataMismatch(expected, received)
+        try:
+            if expected != received:
+                raise exception
+
+        except DataMismatch as exception:
+            class_name = type(self).__name__
+
+            print((
+                f"\nDataMismatch while running {class_name}:\n"
+                f"{str(exception)}\n"
+            ))
+
+            if self.bail_on_fail:
+                exit(1)
+
+
+
+        
+    def run(self):
+        pass
 
 def test():
     a = { "name": "john" }
     b = { "name": "james" }
 
-    raise DataMismatch(1, 2)
+    class CustomTest(TestCase):
+        bail_on_fail = True
+
+        def __init__(self):
+            pass
+
+        def run(self):
+            self.assert_equal(a, b)
+
+    ct = CustomTest()
+    ct.run()
+
+    ct = CustomTest()
+    ct.run()
 
 test()
