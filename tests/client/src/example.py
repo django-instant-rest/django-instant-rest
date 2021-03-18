@@ -19,6 +19,7 @@ class DataMismatch(Exception):
 class TestCase():
     description = None
     bail_on_fail = False
+    did_fail = False
 
     def __init__(self):
         pass
@@ -30,6 +31,7 @@ class TestCase():
                 raise exception
 
         except DataMismatch as exception:
+            self.did_fail = True
             class_name = type(self).__name__
             descriptor = f"{self.description}" if self.description else ""
 
@@ -38,37 +40,42 @@ class TestCase():
                 f"{str(exception)}\n"
             ))
 
-            if self.bail_on_fail:
-                exit(1)
-        
     def run(self):
         pass
 
 class TestRunner():
+    bail_on_fail = False
     tests = []
+
     def add(self, test_case):
         self.tests.append(test_case)
+
     def run(self):
         for test in self.tests:
-            test().run()
+            test_instance = test()
+            test_instance.run()
+
+            if test_instance.did_fail:
+                if self.bail_on_fail or test_instance.bail_on_fail:
+                    exit(1)
+
 
 def test():
     class PersonTest(TestCase):
         description = "Two people should be the same"
-        bail_on_fail = False
 
         def run(self):
-            a = { "name": "john" }
+            a = { "name": "jhn" }
             b = { "name": "john" }
             self.assert_equal(a, b)
 
 
     class NumberTest(TestCase):
         description = "Two numbers should be the same"
-        bail_on_fail = False
+        bail_on_fail = True
 
         def run(self):
-            a = 5
+            a = 4
             b = 5
             self.assert_equal(a, b)
 
