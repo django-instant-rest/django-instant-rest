@@ -1,17 +1,18 @@
 import time
 
+# ANSI Escape Codes
+# https://www.codegrepper.com/code-examples/actionscript/ansi+reset+color+code
+GREEN = "\033[32m"
+RED = "\033[31m"
+YELLOW = "\033[33m"
+RESET = "\033[0m"
+
 class DataMismatch(Exception):
     def __init__(self, expected, received):
         self.expected = expected
         self.received = received
     
     def __str__(self):
-        # ANSI Escape Codes
-        # https://www.codegrepper.com/code-examples/actionscript/ansi+reset+color+code
-        GREEN = "\033[32m"
-        RED = "\033[31m"
-        RESET = "\033[0m"
-        
         return (
             f"Expected: {GREEN}{str(self.expected)}{RESET}\n"
             f"Received: {RED}{str(self.received)}{RESET}"
@@ -48,8 +49,7 @@ class TestRunner():
     bail_on_fail = False
     start_time = None
     tests = []
-    test_completed_count = 0
-    test_succeeded_count = 0
+    counts = { 'passed': 0, 'failed': 0 }
 
     def add(self, test_case):
         self.tests.append(test_case)
@@ -61,23 +61,27 @@ class TestRunner():
         for test in self.tests:
             test_instance = test()
             test_instance.run()
-            self.test_completed_count += 1
 
+            # Fail
             if test_instance.did_fail:
+                self.counts['failed'] += 1
                 if self.bail_on_fail or test_instance.bail_on_fail:
                     exit(1)
+            # Pass
             else:
-                self.test_succeeded_count += 1
+                self.counts['passed'] += 1
 
 
     def __del__(self):
+        '''When instances of the class are garbage collected, printing a message
+        describing the results of the tests'''
         seconds_elapsed = time.time() - self.start_time
         milliseconds_elapsed = seconds_elapsed * 1000
         print((
-            f"Completed {self.test_completed_count} tests "
+            f"Completed {self.counts['passed'] + self.counts['failed']} tests "
             f"in {milliseconds_elapsed} ms\n"
-            f"{self.test_succeeded_count} succeeded\n"
-            f"{self.test_completed_count - self.test_succeeded_count} failed"
+            f"Passed {GREEN}{self.counts['passed']}{RESET}\n"
+            f"Failed {RED}{self.counts['failed']}{RESET}"
         ))
 
 
