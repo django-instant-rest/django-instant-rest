@@ -8,7 +8,10 @@ class DataMismatch(Exception):
         self.received = received
     
     def __str__(self):
-        return "Expected: " + str(self.expected) + "\n" + "Received: " + str(self.received) + "\n"
+        return (
+            f"Expected: \033[1;32;40m{str(self.expected)}\n"
+            f"Received: {str(self.received)}\n"
+        )
 
 
 while True:
@@ -32,7 +35,6 @@ while True:
 
         if received_data != expected_data:
             raise DataMismatch(received_data, expected_data)
-
 
 
     except DataMismatch as e:

@@ -46,23 +46,27 @@ class TestCase():
 
 
 def test():
-    a = { "name": "john" }
-    b = { "name": "james" }
-
     class CustomTest(TestCase):
         description = "Two people should be the same"
-        bail_on_fail = True
+        bail_on_fail = False
 
+        # Setup function
         def __init__(self):
             pass
 
+        # Teardown function
+        def __del__(self):
+            print('Tearing everything down')
+
         def run(self):
+            a = { "name": "john" }
+            b = { "name": "james" }
             self.assert_equal(a, b)
 
     ct = CustomTest()
     ct.run()
 
-    ct = CustomTest()
-    ct.run()
+    dt = CustomTest()
+    dt.run()
 
 test()
