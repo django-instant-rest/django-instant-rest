@@ -17,6 +17,7 @@ class DataMismatch(Exception):
         )
 
 class TestCase():
+    description = None
     bail_on_fail = False
 
     def __init__(self):
@@ -30,26 +31,26 @@ class TestCase():
 
         except DataMismatch as exception:
             class_name = type(self).__name__
+            descriptor = f"{self.description}" if self.description else ""
 
             print((
-                f"\nDataMismatch while running {class_name}:\n"
+                f"\nDataMismatch at {class_name}: {descriptor}\n"
                 f"{str(exception)}\n"
             ))
 
             if self.bail_on_fail:
                 exit(1)
-
-
-
         
     def run(self):
         pass
+
 
 def test():
     a = { "name": "john" }
     b = { "name": "james" }
 
     class CustomTest(TestCase):
+        description = "Two people should be the same"
         bail_on_fail = True
 
         def __init__(self):
