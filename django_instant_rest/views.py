@@ -89,7 +89,7 @@ def read_many(model):
         has_next_page = pagination['has_next_page']
         data = list(map(lambda m: m.to_dict(), page))
 
-        if len(page) is 0:
+        if len(page) == 0:
             return JsonResponse({
                 'first_cursor': None,
                 'last_cursor': None,
