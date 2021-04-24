@@ -152,7 +152,7 @@ def create_one(model):
 
         except Exception:
             # Handling all other errors generically
-            return JsonResponse({ "errors": [invalid_data_err] })
+            return JsonResponse({ "errors": [ str(e) ] })
 
     return request_handler
 

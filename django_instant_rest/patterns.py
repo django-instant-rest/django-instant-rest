@@ -6,7 +6,7 @@ from django.urls import re_path
 # Create a urlpattern element that allows CRUD
 # operations for a given model. 
 def resource(name, model, middleware = None):
-    route = rf"^{name}/(?P<id>\d+)$|^{name}$"
+    route = rf"^{name}/(?P<id>.*)$|^{name}$"
 
     if not middleware:
         return re_path(route, views.resource(model))

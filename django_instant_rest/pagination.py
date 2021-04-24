@@ -38,9 +38,8 @@ def paginate(queryset, first, last, after=None, before=None):
             }
         else:
             fields = decode_cursor(after)
-            id = fields["id"]
             created_at = fields["created_at"]
-            filtered_qs = queryset.filter(id__gt=id, created_at__gt=created_at)
+            filtered_qs = queryset.filter(created_at__gt=created_at)
             extended_page = filtered_qs[:first+1]
             page = extended_page[:first]
             return {
@@ -58,9 +57,8 @@ def paginate(queryset, first, last, after=None, before=None):
             }
         else:
             fields = decode_cursor(before)
-            id = fields["id"]
             created_at = fields["created_at"]
-            filtered_qs = queryset.filter(id__lt=id, created_at__lt=created_at)
+            filtered_qs = queryset.filter(created_at__lt=created_at)
             page = filtered_qs[max(0, len(filtered_qs)-last):]
             return {
                 "page": page,
