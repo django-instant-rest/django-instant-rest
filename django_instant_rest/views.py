@@ -136,11 +136,11 @@ def create_one(model, camel=False):
     def request_handler(request):
         try:
             data = json.loads(request.body.decode("utf-8"))
+            if camel:
+                data = snake_keys(data)
+
         except:
             return JsonResponse({"errors": [invalid_json_err]})
-
-        if camel:
-            data = snake_keys(data)
 
         try:
             for key in data:
@@ -174,13 +174,17 @@ def create_one(model, camel=False):
     return request_handler
 
 
-def update_one(model):
+def update_one(model, camel=False):
     @csrf_exempt
     def request_handler(request, id): 
         try:
             change_data = json.loads(request.body.decode("utf-8"))
+            if camel:
+                change_data = snake_keys(change_data)
+
         except:
             return JsonResponse({"errors": [invalid_json_err]})
+
         try:
             obj = model.objects.get(id=id)
                 
@@ -193,6 +197,10 @@ def update_one(model):
 
             obj.save()
             data = obj.to_dict()
+
+            if camel:
+                data = camel_keys(data)
+
             return JsonResponse({"data" : data})
 
         # Exposing Attribute errors, because they're end-user friendly
@@ -230,7 +238,7 @@ def resource(model, camel=False):
     def request_handler(request, id=None):
         # POST
         if request.method =='POST':
-            return create_one(model, camel=camel)(request)
+            return create_one(model, camel)(request)
 
         # GET 
         elif request.method =='GET':
@@ -242,7 +250,7 @@ def resource(model, camel=False):
         # PUT
         elif request.method == 'PUT':
             if id:
-                return update_one(model)(request, id)
+                return update_one(model, camel)(request, id)
             else:
                 return JsonResponse({"errors": [missing_id_err]})
 
