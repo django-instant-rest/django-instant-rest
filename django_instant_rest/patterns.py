@@ -5,11 +5,11 @@ from django.urls import re_path
 
 # Create a urlpattern element that allows CRUD
 # operations for a given model. 
-def resource(name, model, middleware = None):
+def resource(name, model, middleware = None, camel=False):
     route = rf"^{name}/(?P<id>.*)$|^{name}$"
 
     if not middleware:
-        return re_path(route, views.resource(model))
+        return re_path(route, views.resource(model, camel))
 
     # Using a django-style middleware callable
     # if it was provided as a function parameter.
@@ -17,7 +17,8 @@ def resource(name, model, middleware = None):
 
     def handler(request, id = None):
         def get_response(request, id = id):
-            return views.resource(model)(request, id)
+            final_handler = views.resource(model, camel=True)
+            return final_handler(request, id)
 
         middleware_callable = middleware(get_response)
         response = middleware_callable(request, id = id)

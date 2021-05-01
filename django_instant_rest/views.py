@@ -1,5 +1,6 @@
 
 from .pagination import paginate, encode_cursor
+from .casing import camel_keys
 
 import jwt
 import json
@@ -35,8 +36,7 @@ def date_fields(model):
     return list(filter(is_date_field, field_names))
 
 
-
-def read_many(model):
+def read_many(model, camel = False):
     def request_handler(request):
         params = { key: request.GET.get(key) for key in request.GET }
         queryset = None
@@ -89,20 +89,26 @@ def read_many(model):
         has_next_page = pagination['has_next_page']
         data = list(map(lambda m: m.to_dict(), page))
 
-        if len(page) == 0:
-            return JsonResponse({
-                'first_cursor': None,
-                'last_cursor': None,
-                'has_next_page': False,
-                'data': [],
-            })
+        payload = {
+            'first_cursor': None,
+            'last_cursor': None,
+            'has_next_page': False,
+            'data': [],
+        }
 
-        return JsonResponse({
-            'first_cursor': encode_cursor(page[0]),
-            'last_cursor': encode_cursor(page[-1]),
-            'has_next_page': has_next_page,
-            'data': data,
-        })
+        if len(page) > 0:
+            payload = {
+                'first_cursor': encode_cursor(page[0]),
+                'last_cursor': encode_cursor(page[-1]),
+                'has_next_page': has_next_page,
+                'data': data,
+            }
+
+        if (camel):
+            payload = camel_keys(payload)
+            payload["data"] = [ camel_keys(item) for item in payload["data"] ]
+
+        return JsonResponse(payload)
 
     
     return request_handler
@@ -208,7 +214,7 @@ def delete_one(model):
     return request_handler
 
 
-def resource(model):
+def resource(model, camel=False):
     @csrf_exempt
     def request_handler(request, id=None):
         if request.method =='POST':
@@ -217,7 +223,7 @@ def resource(model):
             if id:
                 return read_one(model)(request, id)
             else:
-                return read_many(model)(request)
+                return read_many(model, camel)(request)
         elif request.method == 'PUT':
             if id:
                 return update_one(model)(request, id)
