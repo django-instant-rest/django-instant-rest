@@ -17,7 +17,7 @@ def resource(name, model, middleware = None, camel=False):
 
     def handler(request, id = None):
         def get_response(request, id = id):
-            final_handler = views.resource(model, camel=True)
+            final_handler = views.resource(model, camel=camel)
             return final_handler(request, id)
 
         middleware_callable = middleware(get_response)
