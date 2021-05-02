@@ -48,8 +48,8 @@ class RestResource(BaseModel):
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
-    username = models.CharField(max_length=32, unique=True)
-    password = models.CharField(max_length=512)
+    username = models.CharField(max_length=32, unique=True, blank=False)
+    password = models.CharField(max_length=512, blank=False)
 
     class Meta:
         abstract = True
