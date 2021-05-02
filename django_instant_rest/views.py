@@ -25,6 +25,23 @@ database_integrity_err = {"message" : "The data provided violates database const
 unknown_storage_error = { "message": "Unable to store the data provided" }
 
 
+def format_validation_error(e: ValidationError, camel=False):
+    errors = []
+
+    # Applying casing
+    field_messages = e.message_dict
+    if camel:
+        field_messages = camel_keys(field_messages)
+
+    # Re-formatting error messages
+    for (field, messages) in field_messages.items():
+        for message in messages:
+            errors.append({ "field": field, "message": message.lower() })
+
+    return errors
+
+
+
 def date_fields(model):
     '''
     Return a list of strings that correspond to a model's
@@ -175,18 +192,7 @@ def create_one(model, camel=False):
 
         # Handling field validation and uniquness errors
         except ValidationError as e:
-            errors = []
-
-            # Applying casing
-            field_messages = e.message_dict
-            if camel:
-                field_messages = camel_keys(field_messages)
-
-            # Re-formatting error messages
-            for (field, messages) in field_messages.items():
-                for message in messages:
-                    errors.append({ "field": field, "message": message.lower() })
-
+            errors = format_validation_error(e, camel=camel)
             return JsonResponse({ "errors": errors })
 
         # Handling all other errors generically
@@ -208,17 +214,19 @@ def update_one(model, camel=False):
             return JsonResponse({"errors": [invalid_json_err]})
 
         try:
-            obj = model.objects.get(id=id)
+            model_instance = model.objects.get(id=id)
                 
             for field_name in change_data:
                 field = getattr(model, field_name)
                 if field.field.is_relation is True:
                     related_model = field.field.related_model
                     change_data[field_name] = related_model.objects.get(id = change_data[field_name])
-                setattr(obj, field_name, change_data[field_name])
+                setattr(model_instance, field_name, change_data[field_name])
 
-            obj.save()
-            data = obj.to_dict()
+            # Validating and storing the data
+            model_instance.full_clean()
+            model_instance.save()
+            data = model_instance.to_dict()
 
             if camel:
                 data = camel_keys(data)
@@ -233,6 +241,11 @@ def update_one(model, camel=False):
         except model.DoesNotExist:
             # Handling attempts to edit non-existent objects
             return JsonResponse({"errors": [id_not_exists_err]})
+
+        # Handling field validation and uniquness errors
+        except ValidationError as e:
+            errors = format_validation_error(e, camel=camel)
+            return JsonResponse({ "errors": errors })
 
         except Exception as inst:
             # Handling all other errors generically
