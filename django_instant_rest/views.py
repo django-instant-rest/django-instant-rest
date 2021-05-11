@@ -165,7 +165,7 @@ def create_one(model, camel=False):
             for key in data:
                 field = getattr(model, key)
 
-                if field.field.is_relation is True:
+                if field.field.is_relation is True and data[key] != None:
                     related_model = field.field.related_model
                     data[key] = related_model.objects.get(id = data[key])
 
@@ -218,7 +218,7 @@ def update_one(model, camel=False):
                 
             for field_name in change_data:
                 field = getattr(model, field_name)
-                if field.field.is_relation is True:
+                if field.field.is_relation is True and data[key] != None:
                     related_model = field.field.related_model
                     change_data[field_name] = related_model.objects.get(id = change_data[field_name])
                 setattr(model_instance, field_name, change_data[field_name])
