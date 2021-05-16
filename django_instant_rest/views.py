@@ -86,10 +86,12 @@ def read_many(model, camel = False):
         if queryset is None:
             queryset = model.objects.all()
 
-        # Applying queryset ordering if requested
+        # Applying queryset ordering if requested, allowing multiple comma
+        # separated values
         try:
             if "order_by" in params:
-                queryset = queryset.order_by(params["order_by"])
+                order_by_args = params["order_by"].split(",")
+                queryset = queryset.order_by(*order_by_args)
         except:
             pass
 
