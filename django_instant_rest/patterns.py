@@ -6,7 +6,7 @@ from django.urls import re_path
 # Create a urlpattern element that allows CRUD
 # operations for a given model. 
 def resource(name, model, middleware = None, camel=False):
-    route = rf"^{name}/(?P<id>.*)$|^{name}$"
+    route = rf"^{name}/(?!authenticate$)(?P<id>.*)$|^{name}$"
 
     if not middleware:
         return re_path(route, views.resource(model, camel))
@@ -31,7 +31,7 @@ def resource(name, model, middleware = None, camel=False):
 # Create a request handler that allows REST clients to authenticate.
 # In the future, it may be associated with additional actions.
 def client(name, client_model, middleware=None):
-    route = rf"^{name}$"
+    route = rf"^{name}/authenticate$"
 
     if not middleware:
         return re_path(route, views.authenticate(client_model))
