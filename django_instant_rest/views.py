@@ -53,13 +53,15 @@ def date_fields(model):
     field_names = [f.name for f in model._meta.fields]
     return list(filter(is_date_field, field_names))
 
-
+# A set of query string parameter keys that should not be used for filtering
+filter_key_blacklist = { "order_by", }
 
 def read_many(model, camel = False):
     def request_handler(request):
         params = { key: request.GET.get(key) for key in request.GET }
         queryset = None
 
+        # Parsing datestrings found in params
         for key in params:
             for field in date_fields(model):
                 if key.startswith(field):
@@ -72,13 +74,26 @@ def read_many(model, camel = False):
 
         # Collecting filter parameters
         for key in params:
+            if key in filter_key_blacklist:
+                continue
+
             try:
                 queryset = model.objects.filter(**{key : params[key]})
             except:
                 pass
 
+        # Using the default queryset because no filters were provided
         if queryset is None:
             queryset = model.objects.all()
+
+        # Applying queryset ordering if requested, allowing multiple comma
+        # separated values
+        try:
+            if "order_by" in params:
+                order_by_args = params["order_by"].split(",")
+                queryset = queryset.order_by(*order_by_args)
+        except:
+            pass
 
         # Collecting pagination parameters
         before = params.get("before")
