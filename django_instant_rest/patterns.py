@@ -31,7 +31,7 @@ def resource(name, model, middleware = None, camel=False):
 # Create a request handler that allows REST clients to authenticate.
 # In the future, it may be associated with additional actions.
 def client(name, client_model, middleware=None):
-    route = rf"^{name}/authenticate$"
+    route = rf"^{name}$"
 
     if not middleware:
         return re_path(route, views.authenticate(client_model))
