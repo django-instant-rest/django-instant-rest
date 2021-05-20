@@ -22,7 +22,8 @@ invalid_data_err = {"message" : "Invalid data type received"}
 unsupported_method_err = {"message" : "Request method not supported by url"}
 invalid_pagination_params_err = {"message" : "Invalid pagination parameters provided"}
 database_integrity_err = {"message" : "The data provided violates database constraints" }
-unknown_storage_error = { "message": "Unable to store the data provided" }
+unknown_storage_err = { "message": "Unable to store the data provided" }
+incorrect_credentials_err = { "message" : "incorrect username/password combination" }
 
 
 def format_validation_error(e: ValidationError, camel=False):
@@ -212,7 +213,7 @@ def create_one(model, camel=False):
 
         # Handling all other errors generically
         except Exception as e:
-            return JsonResponse({ "errors": [ unknown_storage_error ] })
+            return JsonResponse({ "errors": [unknown_storage_err] })
 
     return request_handler
 
@@ -339,7 +340,6 @@ def authenticate(client_model):
             return JsonResponse({ "data": { "token": token } })
 
         except Exception as inst:
-            message = "incorrect username/password combination"
-            return JsonResponse({ 'error': message }, status=400)
+            return JsonResponse({ 'errors': [incorrect_credentials_err] }, status=400)
     
     return handler
