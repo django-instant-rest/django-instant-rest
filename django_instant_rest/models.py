@@ -1,6 +1,7 @@
 from argon2 import PasswordHasher
 from django.db import models
 import datetime
+import uuid
 import jwt
 
 
@@ -23,6 +24,10 @@ class BaseModel(models.Model):
                 continue
 
             value = getattr(self, field.name)
+
+            # Handling UUID fields
+            if type(value) == uuid.UUID:
+                value = str(value)
 
             # Handling datetime fields
             if type(value) == datetime.datetime:
@@ -56,7 +61,6 @@ class RestClient(BaseModel):
     
     class Hashing:
         secret_key = ''
-
 
     def save(self, *args, **kwargs):
         '''Saving the model instance, but first hashing the
