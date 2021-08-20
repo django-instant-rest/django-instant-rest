@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models.fields import DateTimeField
 from django.utils.timezone import make_aware
 from django.db.utils import IntegrityError
+from django.db import OperationalError
 from django.core.exceptions import ValidationError
 
 
@@ -21,7 +22,15 @@ missing_id_err = {"message" : "Required id not provided"}
 invalid_data_err = {"message" : "Invalid data type received"}
 unsupported_method_err = {"message" : "Request method not supported by url"}
 invalid_pagination_params_err = {"message" : "Invalid pagination parameters provided"}
+unknown_pagination_params_err = {"message" : "Something went wrong while trying to perform pagination"}
+invalid_first_param_err = {"message" : "Expected parameter 'first' to be a positive integer"}
+invalid_last_param_err = {"message" : "Expected parameter 'last' to be a positive integer"}
+extra_cursor_param_err = {"message" : "Expected either 'before' parameter or 'after', not both"}
+extra_quantity_param_err = {"message" : "Expected either 'first' parameter or 'last', not both"}
+invalid_before_param_err = {"message" : "Expected parameter 'before' to be a base64 encoded string"}
+invalid_after_param_err = {"message" : "Expected parameter 'after' to be a base64 encoded string"}
 database_integrity_err = {"message" : "The data provided violates database constraints" }
+database_operation_err = {"message" : "Unable to read from the database. Migrations may not be current." }
 unknown_storage_err = { "message": "Unable to store the data provided" }
 incorrect_credentials_err = { "message" : "incorrect username/password combination" }
 
@@ -100,15 +109,27 @@ def read_many(model, camel = False):
         before = params.get("before")
         after = params.get("after")
 
-        if params.get('first'):
-            first = int(params.get('first'))
-        else:
-            first = None
+        if before and after:
+            return JsonResponse({"errors": [extra_cursor_param_err]})
 
-        if params.get('last'):
-            last = int(params.get('last'))
-        else:
-            last = None
+        try:
+            if params.get('first'):
+                first = int(params.get('first'))
+            else:
+                first = None
+        except:
+            return JsonResponse({"errors": [invalid_first_param_err]})
+
+        try:
+            if params.get('last'):
+                last = int(params.get('last'))
+            else:
+                last = None
+        except:
+            return JsonResponse({"errors": [invalid_last_param_err]})
+
+        if first and last:
+            return JsonResponse({"errors": [extra_quantity_param_err]})
 
         # Assigning a default page size
         # if none was provided.
@@ -117,8 +138,18 @@ def read_many(model, camel = False):
 
         try:
             pagination = paginate(queryset, first, last, after, before)
-        except:
-            return JsonResponse({"errors": [invalid_pagination_params_err]})
+
+        except OperationalError:
+            return JsonResponse({"errors": [database_operation_err]})
+
+        except Exception as e:
+            if 'base64' in str(e):
+                if before:
+                    return JsonResponse({"errors": [invalid_before_param_err]})
+                if after:
+                    return JsonResponse({"errors": [invalid_after_param_err]})
+
+            return JsonResponse({"errors": [unknown_pagination_err]})
             
         page = list(pagination['page'])
         has_next_page = pagination['has_next_page']
