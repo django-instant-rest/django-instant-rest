@@ -1,5 +1,4 @@
 .DS_Store
-
 *.sw?
-
+**/*.sqlite3
 *.egg-info
