@@ -5,6 +5,8 @@ from django_instant_rest import patterns
 from .models import *
 import json
 
+
+
 class ResourceModelTests(TestCase):
     @classmethod
     def setUpTestData(self):
@@ -18,22 +20,23 @@ class ResourceModelTests(TestCase):
         self.author = Author.objects.create(first_name="Agatha", last_name="Christie")
         self.author = Author.objects.create(first_name="Akira", last_name="Toriyama")
 
+    def get_req_body(self, path):
+        """Helper fn to reduce duplicate code"""
+        request = self.factory.get(path)
+        response = self.author_view.callback(request)
+        return json.loads(response.content)
+
     def test_get_requests_return_200(self):
         request = self.factory.get('/authors')
         response = self.author_view.callback(request)
         self.assertEqual(response.status_code, 200)
 
     def test_get_requests_return_model_instances(self):
-        request = self.factory.get('/authors')
-        response = self.author_view.callback(request)
-        body = json.loads(response.content)
+        body = self.get_req_body('/authors')
         self.assertEqual(len(body['data']), 3)
 
     def test_get_requests_return_model_instance_fields(self):
-        request = self.factory.get('/authors')
-        response = self.author_view.callback(request)
-        body = json.loads(response.content)
-
+        body = self.get_req_body('/authors')
         author = body['data'][0]
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Stephen')
@@ -42,10 +45,11 @@ class ResourceModelTests(TestCase):
         self.assertIsInstance(author['updated_at'], str)
 
     def test_get_requests_return_pagination_data(self):
-        request = self.factory.get('/authors')
-        response = self.author_view.callback(request)
-
-        body = json.loads(response.content)
+        body = self.get_req_body('/authors')
         self.assertIsInstance(body['first_cursor'], str)
         self.assertIsInstance(body['last_cursor'], str)
         self.assertIsInstance(body['has_next_page'], bool)
+
+    def test_get_requests_respect_filter_params(self):
+        body = self.get_req_body('/authors?first_name__startswith=A')
+        self.assertEqual(len(body['data']), 2)
