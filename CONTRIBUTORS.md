@@ -8,7 +8,7 @@ Firstly, welcome! Thanks for being interested in the project.
 
 # Local Development Tools
 
-Efforts are being made to standardize the development tools All commands listed on this page are intended to work with the following toolset:
+All commands listed on this page are intended to work with the following toolset:
 
 ```bash
 python3 --version
