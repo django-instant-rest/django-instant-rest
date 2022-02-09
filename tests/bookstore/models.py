@@ -1,7 +1,7 @@
 
 from django.db import models
 from django_instant_rest.models import RestResource, RestClient
-from examples import settings
+from tests import settings
 
 
 class Author(RestResource):

@@ -23,7 +23,6 @@ class ResourceModelTests(TestCase):
         response = self.author_view.callback(request)
         self.assertEqual(response.status_code, 200)
 
-
     def test_get_requests_return_model_instances(self):
         request = self.factory.get('/authors')
         response = self.author_view.callback(request)

@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='django_instant_rest',
     version='0.1',
@@ -9,7 +9,7 @@ setup(name='django_instant_rest',
     author_email='',
     license='MIT',
     zip_safe=False,
-    packages=['django_instant_rest'],
+    packages=find_packages(exclude=("tests",)),
     install_requires=[
         'setuptools',
         'argon2-cffi>=20.1',
