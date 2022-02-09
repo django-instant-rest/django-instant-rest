@@ -41,10 +41,11 @@ class ResourceModelTests(TestCase):
         self.assertIsInstance(author['created_at'], str)
         self.assertIsInstance(author['updated_at'], str)
 
-    def test_get_requests_return_pagination_cursors(self):
+    def test_get_requests_return_pagination_data(self):
         request = self.factory.get('/authors')
         response = self.author_view.callback(request)
 
         body = json.loads(response.content)
-        self.assertIsNotNone(body['first_cursor'])
-        self.assertIsNotNone(body['last_cursor'])
+        self.assertIsInstance(body['first_cursor'], str)
+        self.assertIsInstance(body['last_cursor'], str)
+        self.assertIsInstance(body['has_next_page'], bool)
