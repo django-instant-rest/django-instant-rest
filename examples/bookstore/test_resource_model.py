@@ -15,6 +15,8 @@ class ResourceModelTests(TestCase):
         self.customer_view = patterns.client('customers', Customer)
 
         self.author = Author.objects.create(first_name="Stephen", last_name="King")
+        self.author = Author.objects.create(first_name="Agatha", last_name="Christie")
+        self.author = Author.objects.create(first_name="Akira", last_name="Toriyama")
 
     def test_can_get_resource(self):
         request = self.factory.get('/authors')
@@ -22,7 +24,7 @@ class ResourceModelTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         body = json.loads(response.content)
-        self.assertEqual(len(body['data']), 1)
+        self.assertEqual(len(body['data']), 3)
 
         author = body['data'][0]
         self.assertEqual(author['first_name'], 'Stephen')
