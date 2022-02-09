@@ -1,9 +1,9 @@
 
-from django.test import TestCase
-from django.test.client import RequestFactory
+from json import loads as deserialize
 from django_instant_rest import patterns
-from .models import *
-import json
+from django.test.client import RequestFactory
+from django.test import TestCase
+from .models import Author, Book, Customer
 
 
 
@@ -24,7 +24,7 @@ class ResourceModelTests(TestCase):
         """Helper fn to reduce duplicate code"""
         request = self.factory.get(path)
         response = self.author_view.callback(request)
-        return json.loads(response.content)
+        return deserialize(response.content)
 
     def test_get_requests_return_200(self):
         request = self.factory.get('/authors')
