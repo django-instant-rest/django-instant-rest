@@ -21,7 +21,6 @@ pip --version
 # How to Run Tests Locally
 
 ```bash
-cd tests
-pip install -r requirements.txt
-python3 manage.py test --verbosity=2
+pip install -r tests/requirements.txt
+python3 tests/manage.py test tests -v 2
 ```
