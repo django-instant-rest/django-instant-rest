@@ -16,9 +16,9 @@ class ResourceModelTests(TestCase):
         self.book_view = patterns.resource('books', Book)
         self.customer_view = patterns.client('customers', Customer)
 
-        self.author = Author.objects.create(first_name="Stephen", last_name="King")
-        self.author = Author.objects.create(first_name="Agatha", last_name="Christie")
-        self.author = Author.objects.create(first_name="Akira", last_name="Toriyama")
+        Author.objects.create(first_name="Stephen", last_name="King")
+        Author.objects.create(first_name="Agatha", last_name="Christie")
+        Author.objects.create(first_name="Akira", last_name="Toriyama")
 
     def get_req_body(self, path):
         """Helper fn to reduce duplicate code"""
