@@ -29,3 +29,12 @@ class ResourceModelTests(TestCase):
         author = body['data'][0]
         self.assertEqual(author['first_name'], 'Stephen')
         self.assertEqual(author['last_name'], 'King')
+
+
+    def test_pagination_cursors(self):
+        request = self.factory.get('/authors')
+        response = self.author_view.callback(request)
+
+        body = json.loads(response.content)
+        self.assertIsNotNone(body['first_cursor'])
+        self.assertIsNotNone(body['last_cursor'])
