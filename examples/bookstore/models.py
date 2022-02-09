@@ -22,7 +22,8 @@ class Customer(RestResource, RestClient):
     '''All models that inherit from `RestClient` will have a `username`
     and `password` field by default.'''
 
-    email = models.CharField(max_length=255)
+    email = models.CharField(max_length=127)
+    phone = models.CharField(max_length=63)
 
     class Hashing:
         '''Providing a secret value for encoding and decoding passwords.
