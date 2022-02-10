@@ -55,11 +55,19 @@ class ResourceModelTests(TestCase):
         self.assertEqual(len(body['data']), 2)
 
     def test_get_requests_respect_forward_pagination(self):
-        body = self.get_req_body('/authors?first=2')
+        body = self.get_req_body('/authors?first=1')
+        self.assertEqual(len(body['data']), 1)
+
+        author = body['data'][0]
+        self.assertEqual(author['first_name'], 'Stephen')
+
+        cursor = body['first_cursor']
+
+        body = self.get_req_body('/authors?first=2&after=' + cursor)
         self.assertEqual(len(body['data']), 2)
 
-        stephen = body['data'][0]
-        self.assertEqual(stephen['first_name'], 'Stephen')
+        author = body['data'][0]
+        self.assertEqual(author['first_name'], 'Agatha')
 
-        agatha = body['data'][1]
-        self.assertEqual(agatha['first_name'], 'Agatha')
+        author = body['data'][1]
+        self.assertEqual(author['first_name'], 'Akira')
