@@ -5,8 +5,6 @@ from django.test.client import RequestFactory
 from django.test import TestCase
 from .models import Author, Book, Customer
 
-
-
 class ResourceModelTests(TestCase):
     @classmethod
     def setUpTestData(self):
@@ -63,7 +61,7 @@ class ResourceModelTests(TestCase):
 
         cursor = body['first_cursor']
 
-        body = self.get_req_body('/authors?first=2&after=' + cursor)
+        body = self.get_req_body('/authors?first=3&after=' + cursor)
         self.assertEqual(len(body['data']), 2)
 
         author = body['data'][0]
@@ -71,3 +69,21 @@ class ResourceModelTests(TestCase):
 
         author = body['data'][1]
         self.assertEqual(author['first_name'], 'Akira')
+
+    def test_get_requests_respect_backward_pagination(self):
+        body = self.get_req_body('/authors?last=1')
+        self.assertEqual(len(body['data']), 1)
+
+        author = body['data'][0]
+        self.assertEqual(author['first_name'], 'Akira')
+
+        cursor = body['first_cursor']
+
+        body = self.get_req_body('/authors?last=3&before=' + cursor)
+        self.assertEqual(len(body['data']), 2)
+
+        author = body['data'][0]
+        self.assertEqual(author['first_name'], 'Stephen')
+
+        author = body['data'][1]
+        self.assertEqual(author['first_name'], 'Agatha')
