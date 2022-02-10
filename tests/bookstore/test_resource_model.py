@@ -53,3 +53,13 @@ class ResourceModelTests(TestCase):
     def test_get_requests_respect_filter_params(self):
         body = self.get_req_body('/authors?first_name__startswith=A')
         self.assertEqual(len(body['data']), 2)
+
+    def test_get_requests_respect_forward_pagination(self):
+        body = self.get_req_body('/authors?first=2')
+        self.assertEqual(len(body['data']), 2)
+
+        stephen = body['data'][0]
+        self.assertEqual(stephen['first_name'], 'Stephen')
+
+        agatha = body['data'][1]
+        self.assertEqual(agatha['first_name'], 'Agatha')
