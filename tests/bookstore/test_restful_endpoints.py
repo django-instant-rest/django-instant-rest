@@ -1,32 +1,30 @@
 
 from json import loads as deserialize
 from django_instant_rest import patterns
-from django.test.client import RequestFactory
-from django.test import TestCase
+from django.test import TestCase, Client
 from .models import Author, Book, Customer
+
 
 class ResourceModelTests(TestCase):
     @classmethod
     def setUpTestData(self):
-        self.factory = RequestFactory()
+        self.client = Client()
 
-        self.author_view = patterns.resource('authors', Author)
-        self.book_view = patterns.resource('books', Book)
-        self.customer_view = patterns.client('customers', Customer)
+        stephen = Author.objects.create(first_name="Stephen", last_name="King")
+        agatha = Author.objects.create(first_name="Agatha", last_name="Christie")
+        akira = Author.objects.create(first_name="Akira", last_name="Toriyama")
 
-        Author.objects.create(first_name="Stephen", last_name="King")
-        Author.objects.create(first_name="Agatha", last_name="Christie")
-        Author.objects.create(first_name="Akira", last_name="Toriyama")
+        the_shining = Book.objects.create(title="The Shining", author=stephen)
+        the_secret_adversary = Book.objects.create(title="The Secret Adversary", author=agatha)
+        dragon_ball = Book.objects.create(title="Dragon Ball", author=akira)
 
     def get_req_body(self, path):
         """Helper fn to reduce duplicate code"""
-        request = self.factory.get(path)
-        response = self.author_view.callback(request)
+        response = self.client.get(path)
         return deserialize(response.content)
-
+    
     def test_get_requests_return_200(self):
-        request = self.factory.get('/authors')
-        response = self.author_view.callback(request)
+        response = self.client.get('/authors')
         self.assertEqual(response.status_code, 200)
 
     def test_get_requests_return_model_instances(self):
@@ -87,3 +85,7 @@ class ResourceModelTests(TestCase):
 
         author = body['data'][1]
         self.assertEqual(author['first_name'], 'Agatha')
+
+    def test_get_requests_respect_relational_filters(self):
+        body = self.get_req_body('/books?author__first_name=Stephen')
+        self.assertEqual(len(body['data']), 1)

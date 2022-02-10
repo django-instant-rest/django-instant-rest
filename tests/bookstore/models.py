@@ -14,7 +14,6 @@ class Author(RestResource):
 
 class Book(RestResource):
     title = models.CharField(max_length=255)
-    synopsis = models.CharField(max_length= 1023)
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
 
 
