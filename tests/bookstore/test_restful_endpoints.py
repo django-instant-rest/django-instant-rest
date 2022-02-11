@@ -31,6 +31,15 @@ class ResourceModelTests(TestCase):
         body = self.get_req_body('/authors')
         self.assertEqual(len(body['data']), 3)
 
+    def test_get_by_id_requests_return_model_instance_fields(self):
+        body = self.get_req_body('/authors/2')
+        author = body['data']
+        self.assertIsNotNone(author['id'])
+        self.assertEqual(author['first_name'], 'Agatha')
+        self.assertEqual(author['last_name'], 'Christie')
+        self.assertIsInstance(author['created_at'], str)
+        self.assertIsInstance(author['updated_at'], str)
+
     def test_get_requests_return_model_instance_fields(self):
         body = self.get_req_body('/authors')
         author = body['data'][0]
