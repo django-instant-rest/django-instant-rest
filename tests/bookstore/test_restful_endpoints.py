@@ -129,12 +129,6 @@ class ResourceModelTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 1)
 
-    def test_get_requests_respect_relational_filters(self):
-        response = self.client.get('/books?author__first_name=Stephen')
-        body = deserialize(response.content)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 1)
-
     def test_post_requests_create_new_instances(self):
         response = self.client.post(
             '/authors',
@@ -176,3 +170,16 @@ class ResourceModelTests(TestCase):
         actual_book = Book.objects.get(id=book['id'])
         self.assertEqual(actual_book.id, book['id'])
         self.assertEqual(actual_book.title, book['title'])
+
+    # Should have non-200 status code and None for data in the future
+    def test_put_requests_return_errors_when_id_doesnt_exist(self):
+        response = self.client.put(
+            '/books/4',
+            content_type = "application/json",
+            data = { "title": "IT" },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = deserialize(response.content)
+        self.assertEqual(len(body['errors']), 1)
+
