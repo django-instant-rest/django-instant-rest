@@ -217,3 +217,10 @@ class ResourceModelTests(TestCase):
         get_deleted_author = lambda: Author.objects.get(id=2)
         self.assertRaises(Author.DoesNotExist, get_deleted_author)
 
+    # Should have non-200 status code and None for data in the future
+    def test_delete_requests_return_errors_when_id_doesnt_exist(self):
+        response = self.client.delete('/books/4')
+
+        self.assertEqual(response.status_code, 200)
+        body = deserialize(response.content)
+        self.assertEqual(len(body['errors']), 1)
