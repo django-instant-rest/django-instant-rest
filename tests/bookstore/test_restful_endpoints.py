@@ -134,6 +134,13 @@ class ResourceModelTests(TestCase):
         self.assertIsInstance(author['created_at'], str)
         self.assertIsInstance(author['updated_at'], str)
 
+        actual_author = Author.objects.get(id=author['id'])
+        self.assertEqual(actual_author.id, author['id'])
+        self.assertEqual(actual_author.first_name, author['first_name'])
+        self.assertEqual(actual_author.last_name, author['last_name'])
+
+
+
     def test_put_requests_update_existing_instances(self):
         response = self.client.put(
             '/books/1',
@@ -151,4 +158,3 @@ class ResourceModelTests(TestCase):
         actual_book = Book.objects.get(id=book['id'])
         self.assertEqual(actual_book.id, book['id'])
         self.assertEqual(actual_book.title, book['title'])
-
