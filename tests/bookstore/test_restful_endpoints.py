@@ -40,6 +40,15 @@ class ResourceModelTests(TestCase):
         self.assertIsInstance(author['created_at'], str)
         self.assertIsInstance(author['updated_at'], str)
 
+    # In the future, this should use better error (status codes and enum).
+    # body['data'] should also be None
+    def test_get_by_id_requests_return_errors_when_id_doesnt_exist(self):
+        response = self.client.get('/authors/4')
+        self.assertEqual(response.status_code, 200)
+
+        body = deserialize(response.content)
+        self.assertEqual(len(body['errors']), 1)
+
     def test_get_requests_return_model_instance_fields(self):
         body = self.get_req_body('/authors')
         author = body['data'][0]
