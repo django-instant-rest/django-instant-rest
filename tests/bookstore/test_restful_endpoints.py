@@ -195,3 +195,25 @@ class ResourceModelTests(TestCase):
         body = deserialize(response.content)
         self.assertEqual(len(body['errors']), 1)
 
+
+    def test_delete_requests_delete_existing_instances(self):
+        response = self.client.delete(
+            '/authors/2',
+            content_type = "application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = deserialize(response.content)
+        author = body['data']
+
+        # This should not be none in the future
+        self.assertIsNone(author['id'])
+
+        self.assertEqual(author['first_name'], 'Agatha')
+        self.assertEqual(author['last_name'], 'Christie')
+        self.assertIsInstance(author['created_at'], str)
+        self.assertIsInstance(author['updated_at'], str)
+
+        get_deleted_author = lambda: Author.objects.get(id=2)
+        self.assertRaises(Author.DoesNotExist, get_deleted_author)
+
