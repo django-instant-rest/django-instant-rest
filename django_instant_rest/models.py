@@ -54,9 +54,11 @@ class RestResource(BaseModel):
 
     @classmethod
     def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
+        """Get a paginated list of model instance dicts, or errors"""
         queryset = cls.objects.filter(**filters)
         queryset = queryset.order_by(*order_by)
-        return queryset
+        payload = list(map(lambda m: m.to_dict(), queryset))
+        return { "payload": payload }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
@@ -71,7 +73,7 @@ class RestClient(BaseModel):
 
     def save(self, *args, **kwargs):
         '''Saving the model instance, but first hashing the
-        plaintext password stored in it's `password` field'''
+        plaintext password stored in its `password` field'''
         self.password = PasswordHasher().hash(self.password)
         super(RestClient, self).save(*args, **kwargs)
 
