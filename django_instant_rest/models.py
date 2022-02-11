@@ -1,3 +1,5 @@
+from .pagination import paginate, encode_cursor
+from .casing import camel_keys, snake_keys
 from argon2 import PasswordHasher
 from django.db import models
 import datetime
@@ -50,6 +52,10 @@ class RestResource(BaseModel):
     class Meta:
         abstract = True
 
+    @classmethod
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}):
+        queryset = cls.objects.filter(**filters)
+        return queryset
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''

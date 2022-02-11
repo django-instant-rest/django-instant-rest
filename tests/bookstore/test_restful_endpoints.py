@@ -5,10 +5,10 @@ from django.test import TestCase, Client
 from .models import Author, Book, Customer
 
 
-class ResourceModelTests(TestCase):
+class TestResourceModel(TestCase):
     @classmethod
-    def setUpTestData(self):
-        self.client = Client()
+    def setUpTestData(cls):
+        cls.client = Client()
 
         stephen = Author.objects.create(first_name="Stephen", last_name="King")
         agatha = Author.objects.create(first_name="Agatha", last_name="Christie")
