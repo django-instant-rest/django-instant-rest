@@ -16,12 +16,12 @@ class TestModelMethods(TestCase):
 
     def test_get_many_can_apply_filters(self):
         result = Author.get_many(filters = { "first_name__startswith": "A" })
-        self.assertEqual(len(result['payload']), 2)
+        self.assertEqual(len(result['payload']['nodes']), 2)
         self.assertEqual(len(result['errors']), 0)
 
     def test_get_many_can_apply_order_by(self):
         result = Author.get_many(order_by = ["first_name"])
-        self.assertEqual(result['payload'][0]['first_name'], "Agatha")
+        self.assertEqual(result['payload']['nodes'][0]['first_name'], "Agatha")
         self.assertEqual(len(result['errors']), 0)
 
 

@@ -59,7 +59,8 @@ class RestResource(BaseModel):
         try:
             queryset = cls.objects.filter(**filters)
             queryset = queryset.order_by(*order_by)
-            payload = list(map(lambda m: m.to_dict(), queryset))
+            nodes = list(map(lambda m: m.to_dict(), queryset))
+            payload = { "nodes": nodes }
             return { "payload": payload, "errors": [] }
         except:
             return { "payload": None, "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY] }
