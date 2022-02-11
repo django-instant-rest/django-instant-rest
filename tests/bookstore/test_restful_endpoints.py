@@ -89,3 +89,22 @@ class ResourceModelTests(TestCase):
     def test_get_requests_respect_relational_filters(self):
         body = self.get_req_body('/books?author__first_name=Stephen')
         self.assertEqual(len(body['data']), 1)
+
+    def test_get_requests_respect_relational_filters(self):
+        body = self.get_req_body('/books?author__first_name=Stephen')
+        self.assertEqual(len(body['data']), 1)
+
+    def test_post_requests_create_new_instances(self):
+        response = self.client.post(
+            '/authors',
+            content_type = "application/json",
+            data = { "first_name": "Tom", "last_name": "Clancy" },
+        )
+
+        body = deserialize(response.content)
+        author = body['data']
+        self.assertIsNotNone(author['id'])
+        self.assertEqual(author['first_name'], 'Tom')
+        self.assertEqual(author['last_name'], 'Clancy')
+        self.assertIsInstance(author['created_at'], str)
+        self.assertIsInstance(author['updated_at'], str)
