@@ -133,3 +133,18 @@ class ResourceModelTests(TestCase):
         self.assertEqual(author['last_name'], 'Clancy')
         self.assertIsInstance(author['created_at'], str)
         self.assertIsInstance(author['updated_at'], str)
+
+    def test_put_requests_update_existing_instances(self):
+        response = self.client.put(
+            '/books/1',
+            content_type = "application/json",
+            data = { "title": "IT" },
+        )
+
+        body = deserialize(response.content)
+        book = body['data']
+        self.assertIsNotNone(book['id'])
+        self.assertEqual(book['title'], 'IT')
+        self.assertIsInstance(book['created_at'], str)
+        self.assertIsInstance(book['updated_at'], str)
+
