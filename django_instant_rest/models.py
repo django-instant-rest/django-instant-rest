@@ -71,8 +71,8 @@ class RestResource(BaseModel):
 
             # Getting cursor information
             page = list(pagination['page'])
-            first_cursor = None if not len(page) else encode_cursor(page[0]),
-            last_cursor = None if not len(page) else encode_cursor(page[-1]),
+            first_cursor = None if not len(page) else encode_cursor(page[0])
+            last_cursor = None if not len(page) else encode_cursor(page[-1])
 
             # Converting model instances to dictionaries
             nodes = list(map(lambda m: m.to_dict(), pagination['page']))
