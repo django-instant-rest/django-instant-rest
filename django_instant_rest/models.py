@@ -1,5 +1,6 @@
 from .pagination import paginate, encode_cursor
 from .casing import camel_keys, snake_keys
+from .errors import *
 from argon2 import PasswordHasher
 from django.db import models
 import datetime
@@ -55,10 +56,13 @@ class RestResource(BaseModel):
     @classmethod
     def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
         """Get a paginated list of model instance dicts, or errors"""
-        queryset = cls.objects.filter(**filters)
-        queryset = queryset.order_by(*order_by)
-        payload = list(map(lambda m: m.to_dict(), queryset))
-        return { "payload": payload, "errors": [] }
+        try:
+            queryset = cls.objects.filter(**filters)
+            queryset = queryset.order_by(*order_by)
+            payload = list(map(lambda m: m.to_dict(), queryset))
+            return { "payload": payload, "errors": [] }
+        except:
+            return { "payload": None, "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY] }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
