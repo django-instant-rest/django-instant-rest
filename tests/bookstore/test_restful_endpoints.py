@@ -29,8 +29,11 @@ class ResourceModelTests(TestCase):
 
     def test_get_by_id_requests_return_model_instance_fields(self):
         response = self.client.get('/authors/2')
+        self.assertEqual(response.status_code, 200)
+
         body = deserialize(response.content)
         author = body['data']
+
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Agatha')
         self.assertEqual(author['last_name'], 'Christie')
@@ -48,8 +51,11 @@ class ResourceModelTests(TestCase):
 
     def test_get_requests_return_model_instance_fields(self):
         response = self.client.get('/authors')
+        self.assertEqual(response.status_code, 200)
+
         body = deserialize(response.content)
         author = body['data'][0]
+
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Stephen')
         self.assertEqual(author['last_name'], 'King')
@@ -66,12 +72,15 @@ class ResourceModelTests(TestCase):
     def test_get_requests_respect_filter_params(self):
         response = self.client.get('/authors?first_name__startswith=A')
         body = deserialize(response.content)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 2)
 
     def test_get_requests_respect_forward_pagination(self):
         response = self.client.get('/authors?first=1')
         body = deserialize(response.content)
+
         self.assertEqual(len(body['data']), 1)
+        self.assertEqual(response.status_code, 200)
 
         author = body['data'][0]
         self.assertEqual(author['first_name'], 'Stephen')
@@ -80,6 +89,8 @@ class ResourceModelTests(TestCase):
 
         response = self.client.get('/authors?first=3&after=' + cursor)
         body = deserialize(response.content)
+
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 2)
 
         author = body['data'][0]
@@ -91,6 +102,8 @@ class ResourceModelTests(TestCase):
     def test_get_requests_respect_backward_pagination(self):
         response = self.client.get('/authors?last=1')
         body = deserialize(response.content)
+
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 1)
 
         author = body['data'][0]
@@ -101,6 +114,7 @@ class ResourceModelTests(TestCase):
         response = self.client.get('/authors?last=3&before=' + cursor)
         body = deserialize(response.content)
 
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 2)
 
         author = body['data'][0]
@@ -112,11 +126,13 @@ class ResourceModelTests(TestCase):
     def test_get_requests_respect_relational_filters(self):
         response = self.client.get('/books?author__first_name=Stephen')
         body = deserialize(response.content)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 1)
 
     def test_get_requests_respect_relational_filters(self):
         response = self.client.get('/books?author__first_name=Stephen')
         body = deserialize(response.content)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(body['data']), 1)
 
     def test_post_requests_create_new_instances(self):
@@ -126,8 +142,10 @@ class ResourceModelTests(TestCase):
             data = { "first_name": "Tom", "last_name": "Clancy" },
         )
 
+        self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
         author = body['data']
+
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Tom')
         self.assertEqual(author['last_name'], 'Clancy')
@@ -139,8 +157,6 @@ class ResourceModelTests(TestCase):
         self.assertEqual(actual_author.first_name, author['first_name'])
         self.assertEqual(actual_author.last_name, author['last_name'])
 
-
-
     def test_put_requests_update_existing_instances(self):
         response = self.client.put(
             '/books/1',
@@ -148,8 +164,10 @@ class ResourceModelTests(TestCase):
             data = { "title": "IT" },
         )
 
+        self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
         book = body['data']
+
         self.assertIsNotNone(book['id'])
         self.assertEqual(book['title'], 'IT')
         self.assertIsInstance(book['created_at'], str)
