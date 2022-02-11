@@ -69,13 +69,29 @@ class RestResource(BaseModel):
             if pagination['error']:
                 return { "payload": None, "errors": [pagination['error']] }
 
-            # Assembling result
-            nodes = list(map(lambda m: m.to_dict(), pagination['page']))
-            payload = { "nodes": nodes, "has_next_page": pagination['has_next_page'] }
-            return { "payload": payload, "errors": [] }
+            # Getting cursor information
+            page = list(pagination['page'])
+            first_cursor = None if not len(page) else encode_cursor(page[0]),
+            last_cursor = None if not len(page) else encode_cursor(page[-1]),
 
-        except:
-            return { "payload": None, "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY] }
+            # Converting model instances to dictionaries
+            nodes = list(map(lambda m: m.to_dict(), pagination['page']))
+
+            return {
+                'payload': {
+                    'first_cursor': first_cursor,
+                    'last_cursor': last_cursor,
+                    'has_next_page': pagination['has_next_page'],
+                    'nodes': nodes,
+                },
+                'errors': [],
+            }
+
+        except Exception as e:
+            return {
+                "payload": None,
+                "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY],
+            }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''

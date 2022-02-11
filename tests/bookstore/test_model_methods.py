@@ -29,4 +29,3 @@ class TestModelMethods(TestCase):
         self.assertEqual(result['payload']['has_next_page'], True)
         self.assertEqual(len(result['payload']['nodes']), 2)
         self.assertEqual(len(result['errors']), 0)
-
