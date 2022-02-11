@@ -23,5 +23,3 @@ class TestModelMethods(TestCase):
         result = Author.get_many(order_by = ["first_name"])
         self.assertEqual(result['payload']['nodes'][0]['first_name'], "Agatha")
         self.assertEqual(len(result['errors']), 0)
-
-

@@ -54,14 +54,23 @@ class RestResource(BaseModel):
         abstract = True
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
+    def get_many(cls, first=50, last=None, after=None, before=None, filters={}, order_by=[]):
         """Get a paginated list of model instance dicts, or errors"""
         try:
+            # Applying filtering and ordering
             queryset = cls.objects.filter(**filters)
             queryset = queryset.order_by(*order_by)
-            nodes = list(map(lambda m: m.to_dict(), queryset))
-            payload = { "nodes": nodes }
+
+            # Applying pagination
+            pagination = paginate(queryset, first, last, after, before)
+            if pagination['error']:
+                return { "payload": None, "errors": [pagination['error']] }
+
+            # Assembling result
+            nodes = list(map(lambda m: m.to_dict(), pagination['page']))
+            payload = { "nodes": nodes, "has_next_page": pagination['has_next_page'] }
             return { "payload": payload, "errors": [] }
+
         except:
             return { "payload": None, "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY] }
 

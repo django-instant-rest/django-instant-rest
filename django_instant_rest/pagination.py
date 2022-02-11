@@ -1,4 +1,5 @@
 from base64 import b64decode, b64encode
+from .errors import *
 
 def encode_cursor(obj):
     '''
@@ -28,44 +29,56 @@ def decode_cursor(cursor):
     }
 
 def paginate(queryset, first, last, after=None, before=None):
-    if first:
-        if after is None:
-            extended_page = queryset.all()[:first+1]
-            page = extended_page[:first]
-            return {
-                "page": page,
-                "has_next_page": len(extended_page) > len(page)
-            }
+    try:
+        if first:
+            if after is None:
+                page_plus_one = queryset.all()[:first+1]
+                page = page_plus_one[:first]
+                return {
+                    "page": page,
+                    "has_next_page": len(page_plus_one) > len(page),
+                    "error": None,
+                }
+            else:
+                fields = decode_cursor(after)
+                created_at = fields["created_at"]
+                filtered_qs = queryset.filter(created_at__gt=created_at)
+                page_plus_one = filtered_qs[:first+1]
+                page = page_plus_one[:first]
+                return {
+                    "page": page,
+                    "has_next_page": len(page_plus_one) > len(page),
+                    "error": None,
+                }
+        elif last:
+            if before is None:
+                page_plus_one_index = max(0, len(queryset)-last-1)
+                page_plus_one = queryset.all()[page_plus_one_index:]
+                page = page_plus_one[len(page_plus_one)-last:]
+                return {
+                    "page": page,
+                    "has_next_page": len(page_plus_one) > len(page),
+                    "error": None,
+                }
+            else:
+                fields = decode_cursor(before)
+                created_at = fields["created_at"]
+                filtered_qs = queryset.filter(created_at__lt=created_at)
+                page = filtered_qs[max(0, len(filtered_qs)-last):]
+                return {
+                    "page": page,
+                    "has_next_page": len(filtered_qs)-last >= 0,
+                    "error": None,
+                }
         else:
-            fields = decode_cursor(after)
-            created_at = fields["created_at"]
-            filtered_qs = queryset.filter(created_at__gt=created_at)
-            extended_page = filtered_qs[:first+1]
-            page = extended_page[:first]
             return {
-                "page": page,
-                "has_next_page": len(extended_page) > len(page)
+                "page": None,
+                "has_next_page": False,
+                "error": PAGINATION_MISSING_FIRST_OR_LAST,
             }
-    elif last:
-        if before is None:
-            extended_page_index = max(0, len(queryset)-last-1)
-            extended_page = queryset.all()[extended_page_index:]
-            page = extended_page[len(extended_page)-last:]
-            return {
-                "page": page,
-                "has_next_page": len(extended_page) > len(page)
-            }
-        else:
-            fields = decode_cursor(before)
-            created_at = fields["created_at"]
-            filtered_qs = queryset.filter(created_at__lt=created_at)
-            page = filtered_qs[max(0, len(filtered_qs)-last):]
-            return {
-                "page": page,
-                "has_next_page": len(filtered_qs)-last >= 0
-            }
-    else:
-        return queryset
-
-
-
+    except:
+        return {
+            "page": None,
+            "has_next_page": False,
+            "error": UNEXPECTEDLY_FAILED_TO_PAGINATE,
+        }
