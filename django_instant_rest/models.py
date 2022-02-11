@@ -53,8 +53,11 @@ class RestResource(BaseModel):
     class Meta:
         abstract = True
 
+    class Pagination:
+        default_page_size = 50
+
     @classmethod
-    def get_many(cls, first=50, last=None, after=None, before=None, filters={}, order_by=[]):
+    def get_many(cls, first=Pagination.default_page_size, last=None, after=None, before=None, filters={}, order_by=[]):
         """Get a paginated list of model instance dicts, or errors"""
         try:
             # Applying filtering and ordering
