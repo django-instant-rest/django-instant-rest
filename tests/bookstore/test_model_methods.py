@@ -23,3 +23,10 @@ class TestModelMethods(TestCase):
         result = Author.get_many(order_by = ["first_name"])
         self.assertEqual(result['payload']['nodes'][0]['first_name'], "Agatha")
         self.assertEqual(len(result['errors']), 0)
+
+    def test_get_many_can_apply_forward_pagination(self):
+        result = Author.get_many(first = 2)
+        self.assertEqual(result['payload']['has_next_page'], True)
+        self.assertEqual(len(result['payload']['nodes']), 2)
+        self.assertEqual(len(result['errors']), 0)
+
