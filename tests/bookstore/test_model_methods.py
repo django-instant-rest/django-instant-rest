@@ -14,6 +14,12 @@ class TestModelMethods(TestCase):
         the_secret_adversary = Book.objects.create(title="The Secret Adversary", author=agatha)
         dragon_ball = Book.objects.create(title="Dragon Ball", author=akira)
 
-    def test_get_many(self):
+    def test_get_many_can_apply_filters(self):
         queryset = Author.get_many(filters = { "first_name__startswith": "A" })
         self.assertEqual(len(queryset), 2)
+
+    def test_get_many_can_apply_order_by(self):
+        queryset = Author.get_many(order_by = ["first_name"])
+        self.assertEqual(queryset[0].first_name, "Agatha")
+
+

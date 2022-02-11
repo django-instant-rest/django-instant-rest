@@ -53,8 +53,9 @@ class RestResource(BaseModel):
         abstract = True
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}):
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
         queryset = cls.objects.filter(**filters)
+        queryset = queryset.order_by(*order_by)
         return queryset
 
 class RestClient(BaseModel):
