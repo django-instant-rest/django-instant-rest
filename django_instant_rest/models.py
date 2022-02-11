@@ -58,7 +58,7 @@ class RestResource(BaseModel):
         queryset = cls.objects.filter(**filters)
         queryset = queryset.order_by(*order_by)
         payload = list(map(lambda m: m.to_dict(), queryset))
-        return { "payload": payload }
+        return { "payload": payload, "errors": [] }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
