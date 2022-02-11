@@ -151,6 +151,18 @@ class ResourceModelTests(TestCase):
         self.assertEqual(actual_author.first_name, author['first_name'])
         self.assertEqual(actual_author.last_name, author['last_name'])
 
+    # Should have non-200 status code and None for data in the future
+    def test_post_requests_return_errors_when_missing_required_fields(self):
+        response = self.client.post(
+            '/authors',
+            content_type = "application/json",
+            data = { "first_name": "Sylvia" },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = deserialize(response.content)
+        self.assertEqual(len(body['errors']), 1)
+
     def test_put_requests_update_existing_instances(self):
         response = self.client.put(
             '/books/1',
