@@ -148,3 +148,7 @@ class ResourceModelTests(TestCase):
         self.assertIsInstance(book['created_at'], str)
         self.assertIsInstance(book['updated_at'], str)
 
+        actual_book = Book.objects.get(id=book['id'])
+        self.assertEqual(actual_book.id, book['id'])
+        self.assertEqual(actual_book.title, book['title'])
+
