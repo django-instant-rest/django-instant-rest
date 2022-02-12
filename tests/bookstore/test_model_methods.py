@@ -37,6 +37,11 @@ class TestModelMethods(TestCase):
         self.assertEqual(len(result['payload']['nodes']), 1)
         self.assertEqual(len(result['errors']), 0)
 
+    def test_get_many_wont_except_unclear_pagination_params(self):
+        result = Author.get_many(first = 1, last = 1)
+        self.assertIsNone(result['payload'])
+        self.assertEqual(len(result['errors']), 1)
+        self.assertEqual(result['errors'][0]['unique_name'], 'PAGINATION_DIRECTION_UNCLEAR')
 
     def test_get_many_can_apply_backward_pagination(self):
         result = Author.get_many(last = 2)
@@ -68,4 +73,5 @@ class TestModelMethods(TestCase):
         for node in result['payload']['nodes']:
             self.assertIsInstance(node['cursor'], str)
             self.assertEqual(len(node), 6)
+
 
