@@ -58,7 +58,7 @@ class RestResource(BaseModel):
         default_page_size = 50
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=None):
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=None, pseudo_fields=None):
         """Get a paginated list of model instance dicts, or errors"""
         if not first and not last:
             first = cls.Pagination.default_page_size
@@ -82,7 +82,12 @@ class RestResource(BaseModel):
             first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
             last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
 
-            # Removing unwanted cursor fields
+            # Adding pseudo-fields
+            if pseudo_fields and 'cursor' in pseudo_fields:
+                for node in nodes:
+                    node['cursor'] = encode_cursor(node)
+
+            # Removing unwanted cursor ingredient fields
             if fields and not 'id' in fields:
                 for node in nodes:
                     node.pop('id', None)
