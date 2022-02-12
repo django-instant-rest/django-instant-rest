@@ -72,7 +72,7 @@ def paginate(queryset, first, last, after=None, before=None):
                 index_before_first_page_element = max(0, len(all_before_cursor) - quantity - 1)
                 page_plus_1 = all_before_cursor[index_before_first_page_element:]
                 has_prev_page = len(page_plus_1) > quantity
-                has_next_page = bool(len(queryset.filter(created_at__gt=created_at)))
+                has_next_page = bool(queryset.filter(created_at__gt=created_at).first())
                 return {
                     "page": page_plus_1 if not has_prev_page else page_plus_1[1:],
                     "has_next_page": has_next_page,
