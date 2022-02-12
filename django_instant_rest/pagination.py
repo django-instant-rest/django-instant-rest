@@ -33,7 +33,7 @@ def decode_cursor(cursor):
     }
 
 def paginate(queryset, first, last, after=None, before=None):
-    if (not first and not last) or (first and last) or (after and before):
+    if (not first and not last) or (first and last) or (after and before) or (first and before) or (last and after):
         return {
             "page": None,
             "has_next_page": False,

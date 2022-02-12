@@ -1,6 +1,7 @@
 
 from django.test import TestCase
 from .models import Author, Book, Customer
+from django_instant_rest.errors import *
 
 class TestModelMethods(TestCase):
     @classmethod
@@ -40,8 +41,15 @@ class TestModelMethods(TestCase):
     def test_get_many_wont_except_unclear_pagination_params(self):
         result = Author.get_many(first = 1, last = 1)
         self.assertIsNone(result['payload'])
-        self.assertEqual(len(result['errors']), 1)
-        self.assertEqual(result['errors'][0]['unique_name'], 'PAGINATION_DIRECTION_UNCLEAR')
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
+
+        result = Author.get_many(first = 1, before = 'MXwy')
+        self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
+
+        result = Author.get_many(last = 1, after = 'MXwy')
+        self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
 
     def test_get_many_can_apply_backward_pagination(self):
         result = Author.get_many(last = 2)
