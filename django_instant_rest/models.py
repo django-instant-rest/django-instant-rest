@@ -108,7 +108,6 @@ class RestResource(BaseModel):
             }
 
         except Exception as e:
-            raise e
             return {
                 "payload": None,
                 "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY],

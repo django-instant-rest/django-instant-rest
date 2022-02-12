@@ -1,4 +1,5 @@
 from base64 import b64decode, b64encode
+from binascii import Error as Base64Error
 from copy import copy
 from .errors import *
 
@@ -32,6 +33,13 @@ def decode_cursor(cursor):
     }
 
 def paginate(queryset, first, last, after=None, before=None):
+    if (not first and not last) or (first and last) or (after and before):
+        return {
+            "page": None,
+            "has_next_page": False,
+            "error": PAGINATION_DIRECTION_UNCLEAR,
+        }
+
     try:
         if first:
             quantity = first
@@ -87,10 +95,15 @@ def paginate(queryset, first, last, after=None, before=None):
                 "has_next_page": False,
                 "error": PAGINATION_MISSING_FIRST_OR_LAST,
             }
-    except Exception as e:
-        print('E2:', e)
+    except Base64Error as e:
         return {
             "page": None,
             "has_next_page": False,
-            "error": UNEXPECTEDLY_FAILED_TO_PAGINATE,
+            "error": PAGINATION_CURSOR_INVALID,
+        }
+    except Exception as e:
+        return {
+            "page": None,
+            "has_next_page": False,
+            "error": PAGINATION_FAILED_UNEXPECTEDLY,
         }
