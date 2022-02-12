@@ -52,6 +52,7 @@ class RestResource(BaseModel):
 
     class Meta:
         abstract = True
+        indexes = [ models.Index(fields=['created_at']) ]
 
     class Pagination:
         default_page_size = 50
