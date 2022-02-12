@@ -110,7 +110,7 @@ class RestResource(BaseModel):
         except Exception as e:
             return {
                 "payload": None,
-                "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY],
+                "errors": [GET_MANY_FAILED_UNEXPECTEDLY],
             }
 
 class RestClient(BaseModel):
