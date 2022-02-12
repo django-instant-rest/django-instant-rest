@@ -56,3 +56,10 @@ class TestModelMethods(TestCase):
         self.assertEqual(len(result['payload']['nodes']), 1)
         self.assertEqual(len(result['errors']), 0)
 
+    def test_get_many_can_apply_chosen_fields(self):
+        result = Author.get_many(first = 2, fields=['first_name'])
+        self.assertEqual(len(result['payload']['nodes']), 2)
+
+        for node in result['payload']['nodes']:
+            self.assertEqual(len(node), 1)
+

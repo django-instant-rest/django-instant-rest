@@ -7,7 +7,9 @@ def encode_cursor(obj):
     Given a model instance, encode its id and created_at
     properties into a string, called a "cursor".
     '''
-    field_strings = [str(obj.id), str(obj.created_at)]
+    id = obj['id'] if isinstance(obj, dict) else obj.id
+    created_at = obj['created_at'] if isinstance(obj, dict) else obj.created_at
+    field_strings = [ str(id), str(created_at) ]
     payload = '|'.join(field_strings)
     payload_bytes = payload.encode('utf8')
     cursor_bytes = b64encode(payload_bytes)

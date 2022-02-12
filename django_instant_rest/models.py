@@ -58,7 +58,7 @@ class RestResource(BaseModel):
         default_page_size = 50
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=[]):
         """Get a paginated list of model instance dicts, or errors"""
         if not first and not last:
             first = cls.Pagination.default_page_size
@@ -68,18 +68,28 @@ class RestResource(BaseModel):
             queryset = cls.objects.filter(**filters)
             queryset = queryset.order_by(*order_by)
 
+            # Selecting desired fields
+            cursor_fields = ['id','created_at']
+            queryset = queryset.values() if not len(fields) else queryset.values(*fields, *cursor_fields)
+
             # Applying pagination
             pagination = paginate(queryset, first, last, after, before)
             if pagination['error']:
                 return { "payload": None, "errors": [pagination['error']] }
 
             # Getting cursor information
-            page = list(pagination['page'])
-            first_cursor = None if not len(page) else encode_cursor(page[0])
-            last_cursor = None if not len(page) else encode_cursor(page[-1])
+            nodes = list(pagination['page'])
+            first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
+            last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
 
-            # Converting model instances to dictionaries
-            nodes = list(map(lambda m: m.to_dict(), pagination['page']))
+            # Removing unwanted cursor fields
+            if not 'id' in fields:
+                for node in nodes:
+                    node.pop('id', None)
+
+            if not 'created_at' in fields:
+                for node in nodes:
+                    node.pop('created_at', None)
 
             return {
                 'payload': {
@@ -93,6 +103,7 @@ class RestResource(BaseModel):
             }
 
         except Exception as e:
+            raise e
             return {
                 "payload": None,
                 "errors": [UNEXPECTEDLY_FAILED_TO_GET_MANY],
