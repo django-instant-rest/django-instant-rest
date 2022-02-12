@@ -89,12 +89,9 @@ def paginate(queryset, first, last, after=None, before=None):
                     "has_prev_page": has_prev_page,
                     "error": None,
                 }
-        else:
-            return {
-                "page": None,
-                "has_next_page": False,
-                "error": PAGINATION_MISSING_FIRST_OR_LAST,
-            }
+
+        raise Exception('Unreachable!')
+
     except Base64Error as e:
         return {
             "page": None,

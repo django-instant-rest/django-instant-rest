@@ -81,5 +81,3 @@ class TestModelMethods(TestCase):
         for node in result['payload']['nodes']:
             self.assertIsInstance(node['cursor'], str)
             self.assertEqual(len(node), 6)
-
-
