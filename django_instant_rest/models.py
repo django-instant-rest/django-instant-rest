@@ -57,8 +57,11 @@ class RestResource(BaseModel):
         default_page_size = 50
 
     @classmethod
-    def get_many(cls, first=Pagination.default_page_size, last=None, after=None, before=None, filters={}, order_by=[]):
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[]):
         """Get a paginated list of model instance dicts, or errors"""
+        if not first and not last:
+            first = cls.Pagination.default_page_size
+
         try:
             # Applying filtering and ordering
             queryset = cls.objects.filter(**filters)
@@ -82,6 +85,7 @@ class RestResource(BaseModel):
                     'first_cursor': first_cursor,
                     'last_cursor': last_cursor,
                     'has_next_page': pagination['has_next_page'],
+                    'has_prev_page': pagination['has_prev_page'],
                     'nodes': nodes,
                 },
                 'errors': [],

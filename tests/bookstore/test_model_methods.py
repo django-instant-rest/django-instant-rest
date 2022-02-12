@@ -1,6 +1,7 @@
 
 from django.test import TestCase
 from .models import Author, Book, Customer
+from json import dumps
 
 
 class TestModelMethods(TestCase):
@@ -38,4 +39,20 @@ class TestModelMethods(TestCase):
         self.assertEqual(len(result['payload']['nodes']), 1)
         self.assertEqual(len(result['errors']), 0)
 
+
+    def test_get_many_can_apply_backward_pagination(self):
+        result = Author.get_many(last = 2)
+        self.assertEqual(result['payload']['has_next_page'], False)
+        self.assertEqual(result['payload']['has_prev_page'], True)
+        self.assertEqual(len(result['payload']['nodes']), 2)
+        self.assertEqual(len(result['errors']), 0)
+
+        first_cursor = result['payload']['first_cursor']
+        self.assertIsInstance(first_cursor, str)
+
+        result = Author.get_many(last = 2, before = first_cursor)
+        self.assertEqual(result['payload']['has_next_page'], True)
+        self.assertEqual(result['payload']['has_prev_page'], False)
+        self.assertEqual(len(result['payload']['nodes']), 1)
+        self.assertEqual(len(result['errors']), 0)
 

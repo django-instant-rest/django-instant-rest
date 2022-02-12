@@ -5,9 +5,9 @@ UNEXPECTEDLY_FAILED_TO_GET_MANY = {
     'is_internal': True,
 }
 
-UNEXPECTELY_FAILED_TO_PAGINATE = {
+UNEXPECTEDLY_FAILED_TO_PAGINATE = {
     'message': 'Failed unexpectedly while trying to paginate a list of objects',
-    'unique_name': 'UNEXPECTELY_FAILED_TO_PAGINATE',
+    'unique_name': 'UNEXPECTEDLY_FAILED_TO_PAGINATE',
     'is_internal': True,
 }
 
