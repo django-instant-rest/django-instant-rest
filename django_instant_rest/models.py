@@ -58,7 +58,7 @@ class RestResource(BaseModel):
         default_page_size = 50
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=[]):
+    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=None):
         """Get a paginated list of model instance dicts, or errors"""
         if not first and not last:
             first = cls.Pagination.default_page_size
@@ -70,7 +70,7 @@ class RestResource(BaseModel):
 
             # Selecting desired fields
             cursor_fields = ['id','created_at']
-            queryset = queryset.values() if not len(fields) else queryset.values(*fields, *cursor_fields)
+            queryset = queryset.values() if not fields else queryset.values(*fields, *cursor_fields)
 
             # Applying pagination
             pagination = paginate(queryset, first, last, after, before)
@@ -83,11 +83,11 @@ class RestResource(BaseModel):
             last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
 
             # Removing unwanted cursor fields
-            if not 'id' in fields:
+            if fields and not 'id' in fields:
                 for node in nodes:
                     node.pop('id', None)
 
-            if not 'created_at' in fields:
+            if fields and not 'created_at' in fields:
                 for node in nodes:
                     node.pop('created_at', None)
 
