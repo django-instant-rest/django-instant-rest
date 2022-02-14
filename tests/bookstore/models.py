@@ -16,6 +16,15 @@ class Book(RestResource):
     title = models.CharField(max_length=255)
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
 
+class StoreLocation(RestResource):
+    street_address = models.CharField(max_length=255)
+    state_or_province = models.CharField(max_length=255)
+    country = models.CharField(max_length=255)
+
+class BookInventory(RestResource):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE)
+    quantity: models.PositiveIntegerField()
 
 class Customer(RestResource, RestClient):
     '''All models that inherit from `RestClient` will have a `username`
