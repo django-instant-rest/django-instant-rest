@@ -1,5 +1,5 @@
 
-from django.test import TestCase
+from django.test import TestCase, tag
 from .models import Author, Book, Customer
 from django_instant_rest.errors import *
 
@@ -74,7 +74,7 @@ class TestModelMethods(TestCase):
         for node in result['payload']['nodes']:
             self.assertEqual(len(node), 1)
 
-    def test_get_many_can_apply_cursor_pseudo_field(self):
+    def test_get_many_can_apply_cursor_field(self):
         result = Book.get_many(first = 2, pseudo_fields=['cursor'])
         self.assertEqual(len(result['payload']['nodes']), 2)
 

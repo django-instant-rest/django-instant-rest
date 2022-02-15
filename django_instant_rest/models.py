@@ -44,7 +44,6 @@ class BaseModel(models.Model):
 
         return result
 
-
 class RestResource(BaseModel):
     '''Represents a data type that is exposed by a REST API'''
     created_at = models.DateTimeField(auto_now_add=True)
@@ -56,24 +55,46 @@ class RestResource(BaseModel):
 
     class Pagination:
         default_page_size = 50
+    
+    class Hooks:
+        before_get_many = []
+        after_get_many = []
 
     @classmethod
-    def get_many(cls, first=None, last=None, after=None, before=None, filters={}, order_by=[], fields=None, pseudo_fields=None):
+    def get_many(cls, **input):
         """Get a paginated list of model instance dicts, or errors"""
         try:
-            # Applying filtering and ordering
-            queryset = cls.objects.filter(**filters)
-            queryset = queryset.order_by(*order_by)
+            input = default_get_many_args(input)
 
-            # Selecting desired fields
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_get_many:
+                input, error = hook_fn(**input)
+                if error:
+                    return { "payload": None, "errors": [error] }
+            
+            # Building a queryset using filtering and ordering params
+            filters = input.get('filters', {})
+            order_by = input.get('order_by', [])
+            query = cls.objects.filter(**filters) if len(filters) else cls.objects.all()
+            query = query.order_by(*order_by) if len(order_by) else query
+
+            # Modifying the queryset to retrieve only desired fields,
+            # and those that are necessary for pagination.
+            fields = input.get('fields', [])
             cursor_fields = ['id','created_at']
-            queryset = queryset.values() if not fields else queryset.values(*fields, *cursor_fields)
+            query = query.values(*fields, *cursor_fields) if len(fields) else query.values()
+
+            # Destructuring pagination params
+            first = input.get('first')
+            last = input.get('last')
+            before = input.get('before')
+            after = input.get('after')
 
             # Applying pagination
             if not first and not last:
                 first = cls.Pagination.default_page_size
 
-            pagination = paginate(queryset, first, last, after, before)
+            pagination = paginate(query, first, last, after, before)
             if pagination['error']:
                 return { "payload": None, "errors": [pagination['error']] }
 
@@ -83,16 +104,16 @@ class RestResource(BaseModel):
             last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
 
             # Adding pseudo-fields
-            if pseudo_fields and 'cursor' in pseudo_fields:
+            if 'cursor' in input.get('pseudo_fields', []):
                 for node in nodes:
                     node['cursor'] = encode_cursor(node)
 
             # Removing unwanted cursor ingredient fields
-            if fields and not 'id' in fields:
+            if len(fields) and not 'id' in fields:
                 for node in nodes:
                     node.pop('id', None)
 
-            if fields and not 'created_at' in fields:
+            if len(fields) and not 'created_at' in fields:
                 for node in nodes:
                     node.pop('created_at', None)
 
@@ -108,10 +129,7 @@ class RestResource(BaseModel):
             }
 
         except Exception as e:
-            return {
-                "payload": None,
-                "errors": [GET_MANY_FAILED_UNEXPECTEDLY],
-            }
+            return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY] }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
@@ -124,11 +142,11 @@ class RestClient(BaseModel):
     class Hashing:
         secret_key = ''
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **input):
         '''Saving the model instance, but first hashing the
         plaintext password stored in its `password` field'''
         self.password = PasswordHasher().hash(self.password)
-        super(RestClient, self).save(*args, **kwargs)
+        super(RestClient, self).save(*args, **input)
 
     def verify_password(self, password):
         '''Determine whether a given hashed password belongs
@@ -143,3 +161,11 @@ class RestClient(BaseModel):
             return jwt.encode(payload, self.Hashing.secret_key, algorithm='HS256')
         else:
             return None
+
+def default_get_many_args(kwargs = {}):
+    input = kwargs
+    input['filters'] = input.get('filters', {})
+    input['order_by'] = input.get('order_by', [])
+    input['pseudo_fields'] = input.get('pseudo_fields', [])
+    input['fields'] = input.get('fields', [])
+    return input
