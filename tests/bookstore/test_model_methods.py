@@ -95,3 +95,22 @@ class TestModelMethods(TestCase):
 
         self.assertEqual(result['payload']['nodes'][0]['first_name'], 'Agatha')
         self.assertEqual(result['payload']['nodes'][0]['last_name'], 'Christie')
+
+    def test_get_many_can_be_access_controlled_using_hooks(self):
+        auth_error = {
+            "message": "Failed to authenticate",
+            "unique_name": "AUTHENTICATION_FAILED",
+            "is_internal": False,
+        }
+
+        def hook(**input):
+            credentials = input.get('credentials', None)
+            return (input, None) if credentials else (input, auth_error)
+
+        Author.Hooks.before_get_many.append(hook)
+        result_a = Author.get_many(credentials=True)
+        result_b = Author.get_many()
+        Author.Hooks.before_get_many.clear()
+
+        self.assertEqual(result_a['errors'], [])
+        self.assertEqual(result_b['errors'], [auth_error])
