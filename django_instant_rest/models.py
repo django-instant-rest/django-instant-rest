@@ -73,10 +73,10 @@ class RestResource(BaseModel):
 
             # Applying pre-operation hooks
             for hook_fn in cls.Hooks.before_get_many:
-                input, error = hook_fn(**input)
+                input, errors = hook_fn(**input)
 
-                if error:
-                    output = { "payload": None, "errors": [error] }
+                if errors:
+                    output = { "payload": None, "errors": errors }
                     break
 
             # Performing the actual data fetching

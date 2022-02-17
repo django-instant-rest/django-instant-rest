@@ -105,7 +105,7 @@ class TestModelMethods(TestCase):
 
         def fail_without_credentials(**input):
             credentials = input.get('credentials', None)
-            return (input, None) if credentials else (input, auth_error)
+            return (input, None) if credentials else (input, [auth_error])
 
         Author.Hooks.before_get_many.append(fail_without_credentials)
         result_a = Author.get_many(credentials=True)
