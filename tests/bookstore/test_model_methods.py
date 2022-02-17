@@ -1,7 +1,9 @@
 
-from django.test import TestCase, tag
 from .models import Author, Book, Customer
 from django_instant_rest.errors import *
+from django_instant_rest.models import RestResource
+from django.test import TestCase, tag
+from django.db import models
 
 class TestModelMethods(TestCase):
     @classmethod
@@ -81,3 +83,15 @@ class TestModelMethods(TestCase):
         for node in result['payload']['nodes']:
             self.assertIsInstance(node['cursor'], str)
             self.assertEqual(len(node), 6)
+
+    def test_get_many_inputs_can_be_modified_by_hooks(self):
+        def hook(**input):
+            input['filters']['first_name'] = 'Agatha'
+            return (input, None)
+
+        Author.Hooks.before_get_many.append(hook)
+        result = Author.get_many(filters = { "first_name": "Stephen" })
+        Author.Hooks.before_get_many.clear()
+
+        self.assertEqual(result['payload']['nodes'][0]['first_name'], 'Agatha')
+        self.assertEqual(result['payload']['nodes'][0]['last_name'], 'Christie')
