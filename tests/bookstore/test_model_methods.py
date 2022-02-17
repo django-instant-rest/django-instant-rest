@@ -114,3 +114,4 @@ class TestModelMethods(TestCase):
 
         self.assertEqual(result_a['errors'], [])
         self.assertEqual(result_b['errors'], [auth_error])
+        self.assertEqual(result_b['payload'], None)
