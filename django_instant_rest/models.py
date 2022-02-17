@@ -62,10 +62,27 @@ class RestResource(BaseModel):
 
     @classmethod
     def get_many(cls, **input):
+        """
+        Retrieve a paginated list of model instance dictionaries,
+        respecting user defined hook functions that run before and
+        after data is retrieved.
+        """
         try:
             input = default_get_many_args(input)
-            output = cls.__raw_get_many(**input)
+            output = None
 
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_get_many:
+                input, error = hook_fn(**input)
+
+                if error:
+                    output = { "payload": None, "errors": [error] }
+                    break
+
+            # Performing the actual data fetching
+            output = output if output else cls.__raw_get_many(**input)
+
+            # Applying post-operation hooks
             for hook_fn in cls.Hooks.after_get_many:
                 output = hook_fn(**output)
 
@@ -76,13 +93,7 @@ class RestResource(BaseModel):
 
     @classmethod
     def __raw_get_many(cls, **input):
-        """Get a paginated list of model instance dicts, or errors"""
-
-        # Applying pre-operation hooks
-        for hook_fn in cls.Hooks.before_get_many:
-            input, error = hook_fn(**input)
-            if error:
-                return { "payload": None, "errors": [error] }
+        """Performs the pagination and data fetching for get_many()"""
         
         # Building a queryset using filtering and ordering params
         filters = input.get('filters', {})
