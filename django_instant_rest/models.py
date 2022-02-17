@@ -62,74 +62,83 @@ class RestResource(BaseModel):
 
     @classmethod
     def get_many(cls, **input):
-        """Get a paginated list of model instance dicts, or errors"""
         try:
             input = default_get_many_args(input)
+            output = cls.__raw_get_many(**input)
 
-            # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_get_many:
-                input, error = hook_fn(**input)
-                if error:
-                    return { "payload": None, "errors": [error] }
-            
-            # Building a queryset using filtering and ordering params
-            filters = input.get('filters', {})
-            order_by = input.get('order_by', [])
-            query = cls.objects.filter(**filters) if len(filters) else cls.objects.all()
-            query = query.order_by(*order_by) if len(order_by) else query
+            for hook_fn in cls.Hooks.after_get_many:
+                output = hook_fn(**output)
 
-            # Modifying the queryset to retrieve only desired fields,
-            # and those that are necessary for pagination.
-            fields = input.get('fields', [])
-            cursor_fields = ['id','created_at']
-            query = query.values(*fields, *cursor_fields) if len(fields) else query.values()
-
-            # Destructuring pagination params
-            first = input.get('first')
-            last = input.get('last')
-            before = input.get('before')
-            after = input.get('after')
-
-            # Applying pagination
-            if not first and not last:
-                first = cls.Pagination.default_page_size
-
-            pagination = paginate(query, first, last, after, before)
-            if pagination['error']:
-                return { "payload": None, "errors": [pagination['error']] }
-
-            # Getting cursor information
-            nodes = list(pagination['page'])
-            first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
-            last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
-
-            # Adding pseudo-fields
-            if 'cursor' in input.get('pseudo_fields', []):
-                for node in nodes:
-                    node['cursor'] = encode_cursor(node)
-
-            # Removing unwanted cursor ingredient fields
-            if len(fields) and not 'id' in fields:
-                for node in nodes:
-                    node.pop('id', None)
-
-            if len(fields) and not 'created_at' in fields:
-                for node in nodes:
-                    node.pop('created_at', None)
-
-            return {
-                'payload': {
-                    'first_cursor': first_cursor,
-                    'last_cursor': last_cursor,
-                    'has_next_page': pagination['has_next_page'],
-                    'has_prev_page': pagination['has_prev_page'],
-                    'nodes': nodes,
-                },
-                'errors': [],
-            }
+            return output
 
         except Exception as e:
             return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY] }
+
+    @classmethod
+    def __raw_get_many(cls, **input):
+        """Get a paginated list of model instance dicts, or errors"""
+
+        # Applying pre-operation hooks
+        for hook_fn in cls.Hooks.before_get_many:
+            input, error = hook_fn(**input)
+            if error:
+                return { "payload": None, "errors": [error] }
+        
+        # Building a queryset using filtering and ordering params
+        filters = input.get('filters', {})
+        order_by = input.get('order_by', [])
+        query = cls.objects.filter(**filters) if len(filters) else cls.objects.all()
+        query = query.order_by(*order_by) if len(order_by) else query
+
+        # Modifying the queryset to retrieve only desired fields,
+        # and those that are necessary for pagination.
+        fields = input.get('fields', [])
+        cursor_fields = ['id','created_at']
+        query = query.values(*fields, *cursor_fields) if len(fields) else query.values()
+
+        # Destructuring pagination params
+        first = input.get('first')
+        last = input.get('last')
+        before = input.get('before')
+        after = input.get('after')
+
+        # Applying pagination
+        if not first and not last:
+            first = cls.Pagination.default_page_size
+
+        pagination = paginate(query, first, last, after, before)
+        if pagination['error']:
+            return { "payload": None, "errors": [pagination['error']] }
+
+        # Getting cursor information
+        nodes = list(pagination['page'])
+        first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
+        last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
+
+        # Adding pseudo-fields
+        if 'cursor' in input.get('pseudo_fields', []):
+            for node in nodes:
+                node['cursor'] = encode_cursor(node)
+
+        # Removing unwanted cursor ingredient fields
+        if len(fields) and not 'id' in fields:
+            for node in nodes:
+                node.pop('id', None)
+
+        if len(fields) and not 'created_at' in fields:
+            for node in nodes:
+                node.pop('created_at', None)
+
+        return {
+            'payload': {
+                'first_cursor': first_cursor,
+                'last_cursor': last_cursor,
+                'has_next_page': pagination['has_next_page'],
+                'has_prev_page': pagination['has_prev_page'],
+                'nodes': nodes,
+            },
+            'errors': [],
+        }
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''

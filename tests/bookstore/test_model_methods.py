@@ -84,12 +84,12 @@ class TestModelMethods(TestCase):
             self.assertIsInstance(node['cursor'], str)
             self.assertEqual(len(node), 6)
 
-    def test_get_many_inputs_can_be_modified_by_hooks(self):
-        def hook(**input):
+    def test_get_many_input_can_be_modified_by_hooks(self):
+        def force_first_name_equals_agatha(**input):
             input['filters']['first_name'] = 'Agatha'
             return (input, None)
 
-        Author.Hooks.before_get_many.append(hook)
+        Author.Hooks.before_get_many.append(force_first_name_equals_agatha)
         result = Author.get_many(filters = { "first_name": "Stephen" })
         Author.Hooks.before_get_many.clear()
 
@@ -103,11 +103,11 @@ class TestModelMethods(TestCase):
             "is_internal": False,
         }
 
-        def hook(**input):
+        def fail_without_credentials(**input):
             credentials = input.get('credentials', None)
             return (input, None) if credentials else (input, auth_error)
 
-        Author.Hooks.before_get_many.append(hook)
+        Author.Hooks.before_get_many.append(fail_without_credentials)
         result_a = Author.get_many(credentials=True)
         result_b = Author.get_many()
         Author.Hooks.before_get_many.clear()
@@ -115,3 +115,21 @@ class TestModelMethods(TestCase):
         self.assertEqual(result_a['errors'], [])
         self.assertEqual(result_b['errors'], [auth_error])
         self.assertEqual(result_b['payload'], None)
+
+    def test_get_many_output_can_be_modified_by_hooks(self):
+        def abbreviate_last_names(**output):
+            try:
+                for node in output['payload']['nodes']:
+                    node['last_name'] = node['last_name'][0] + '.'
+                return output
+            except:
+                return output
+
+        Author.Hooks.after_get_many.append(abbreviate_last_names)
+        result = Author.get_many()
+        Author.Hooks.after_get_many.clear()
+
+        self.assertEqual(len(result['payload']['nodes']), 3)
+        for node in result['payload']['nodes']:
+            self.assertEqual(len(node['last_name']), 2)
+
