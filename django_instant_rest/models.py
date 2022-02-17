@@ -122,7 +122,7 @@ class RestResource(BaseModel):
             return { "payload": None, "errors": [pagination['error']] }
 
         # Getting cursor information
-        nodes = list(pagination['page'])
+        nodes = list(pagination['queryset'])
         first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
         last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
 

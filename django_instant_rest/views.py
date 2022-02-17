@@ -151,7 +151,7 @@ def read_many(model, camel = False):
 
             return JsonResponse({"errors": [unknown_pagination_err]})
             
-        page = list(pagination['page'])
+        page = list(pagination['queryset'])
         has_next_page = pagination['has_next_page']
         data = list(map(lambda m: m.to_dict(), page))
 

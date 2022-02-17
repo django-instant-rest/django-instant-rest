@@ -35,7 +35,7 @@ def decode_cursor(cursor):
 def paginate(queryset, first, last, after=None, before=None):
     if (not first and not last) or (first and last) or (after and before) or (first and before) or (last and after):
         return {
-            "page": None,
+            "queryset": None,
             "has_next_page": False,
             "error": PAGINATION_DIRECTION_UNCLEAR,
         }
@@ -47,7 +47,7 @@ def paginate(queryset, first, last, after=None, before=None):
                 page_plus_one = queryset.all()[:first+1]
                 page = page_plus_one[:first]
                 return {
-                    "page": page,
+                    "queryset": page,
                     "has_prev_page": False,
                     "has_next_page": len(page_plus_one) > quantity,
                     "error": None,
@@ -58,7 +58,7 @@ def paginate(queryset, first, last, after=None, before=None):
                 has_next_page = len(page_plus_1) > quantity
                 has_prev_page = bool(len(queryset.filter(created_at__lt=fields['created_at'])))
                 return {
-                    "page": page_plus_1[:quantity],
+                    "queryset": page_plus_1[:quantity],
                     "has_next_page": has_next_page,
                     "has_prev_page": has_prev_page,
                     "error": None,
@@ -70,7 +70,7 @@ def paginate(queryset, first, last, after=None, before=None):
                 page_plus_1 = queryset.all()[index_before_first_page_element:]
                 page = page_plus_1[1:]
                 return {
-                    "page": page,
+                    "queryset": page,
                     "has_next_page": False,
                     "has_prev_page": len(page_plus_1) > len(page),
                     "error": None,
@@ -84,7 +84,7 @@ def paginate(queryset, first, last, after=None, before=None):
                 has_prev_page = len(page_plus_1) > quantity
                 has_next_page = bool(queryset.filter(created_at__gt=created_at).first())
                 return {
-                    "page": page_plus_1 if not has_prev_page else page_plus_1[1:],
+                    "queryset": page_plus_1 if not has_prev_page else page_plus_1[1:],
                     "has_next_page": has_next_page,
                     "has_prev_page": has_prev_page,
                     "error": None,
@@ -94,13 +94,13 @@ def paginate(queryset, first, last, after=None, before=None):
 
     except Base64Error as e:
         return {
-            "page": None,
+            "queryset": None,
             "has_next_page": False,
             "error": PAGINATION_CURSOR_INVALID,
         }
     except Exception as e:
         return {
-            "page": None,
+            "queryset": None,
             "has_next_page": False,
             "error": PAGINATION_FAILED_UNEXPECTEDLY,
         }
