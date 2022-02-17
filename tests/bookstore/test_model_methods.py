@@ -40,19 +40,6 @@ class TestModelMethods(TestCase):
         self.assertEqual(len(result['payload']['nodes']), 1)
         self.assertEqual(len(result['errors']), 0)
 
-    def test_get_many_wont_except_unclear_pagination_params(self):
-        result = Author.get_many(first = 1, last = 1)
-        self.assertIsNone(result['payload'])
-        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
-
-        result = Author.get_many(first = 1, before = 'MXwy')
-        self.assertIsNone(result['payload'])
-        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
-
-        result = Author.get_many(last = 1, after = 'MXwy')
-        self.assertIsNone(result['payload'])
-        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
-
     def test_get_many_can_apply_backward_pagination(self):
         result = Author.get_many(last = 2)
         self.assertEqual(result['payload']['has_next_page'], False)
@@ -68,6 +55,29 @@ class TestModelMethods(TestCase):
         self.assertEqual(result['payload']['has_prev_page'], False)
         self.assertEqual(len(result['payload']['nodes']), 1)
         self.assertEqual(len(result['errors']), 0)
+
+    def test_get_many_can_utilize_custom_default_page_size(self):
+        old_default_page_size = Author.Pagination.default_page_size
+        Author.Pagination.default_page_size = 2
+
+        result = Author.get_many()
+        self.assertEqual(len(result['payload']['nodes']), 2)
+        Author.Pagination.default_page_size = old_default_page_size
+
+    def test_get_many_wont_except_unclear_pagination_params(self):
+        result = Author.get_many(first = 1, last = 1)
+        self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
+
+        result = Author.get_many(first = 1, before = 'MXwy')
+        self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
+
+        result = Author.get_many(last = 1, after = 'MXwy')
+        self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
+
+
 
     def test_get_many_can_apply_chosen_fields(self):
         result = Author.get_many(first = 2, fields=['first_name'])
