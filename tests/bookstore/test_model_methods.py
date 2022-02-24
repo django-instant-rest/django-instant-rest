@@ -77,8 +77,6 @@ class TestModelMethods(TestCase):
         self.assertIsNone(result['payload'])
         self.assertEqual(result['errors'], [PAGINATION_DIRECTION_UNCLEAR])
 
-
-
     def test_get_many_can_apply_chosen_fields(self):
         result = Author.get_many(first = 2, fields=['first_name'])
         self.assertEqual(len(result['payload']['nodes']), 2)
@@ -143,3 +141,11 @@ class TestModelMethods(TestCase):
         for node in result['payload']['nodes']:
             self.assertEqual(len(node['last_name']), 2)
 
+    def test_create_one_returns_a_newly_created_object(self):
+        result = Author.create_one(first_name = "JRR", last_name = "Tolkein")
+        self.assertIsNotNone(result['payload']['id'])
+        self.assertIsInstance(result['payload']['created_at'], str)
+        self.assertIsInstance(result['payload']['updated_at'], str)
+        self.assertEqual(result['payload']['first_name'], 'JRR')
+        self.assertEqual(result['payload']['last_name'], 'Tolkein')
+        self.assertEqual(result['errors'], [])

@@ -1,4 +1,10 @@
 
+CREATE_ONE_FAILED_UNEXPECTEDLY = {
+    'message': 'Failed unexpectedly while trying to store a new object',
+    'unique_name': 'CREATE_ONE_FAILED_UNEXPECTEDLY ',
+    'is_internal': True,
+}
+
 GET_MANY_FAILED_UNEXPECTEDLY = {
     'message': 'Failed unexpectedly while trying to retrieve a list of objects',
     'unique_name': 'GET_MANY_FAILED_UNEXPECTEDLY ',

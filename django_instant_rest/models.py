@@ -61,6 +61,33 @@ class RestResource(BaseModel):
         after_get_many = []
 
     @classmethod
+    def create_one(cls, **input):
+        try:
+            for key in input:
+                field = getattr(cls, key)
+
+                if field.field.is_relation is True and input[key] != None:
+                    related_model = field.field.related_model
+                    input[key] = related_model.objects.get(id = input[key])
+
+            # Validating and storing the data
+            model_instance = cls(**input)
+            model_instance.full_clean()
+            model_instance.save()
+            
+            return {
+                "payload": model_instance.to_dict(),
+                "errors": [],
+            }
+
+        except Exception as e:
+            print(e)
+            return {
+                "payload": None,
+                "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY ]
+            }
+
+    @classmethod
     def get_many(cls, **input):
         """
         Retrieve a paginated list of model instance dictionaries,
