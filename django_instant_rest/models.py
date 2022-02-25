@@ -3,6 +3,7 @@ from .casing import camel_keys, snake_keys
 from .errors import *
 from argon2 import PasswordHasher
 from django.db import models
+from django.core.exceptions import ValidationError
 import datetime
 import uuid
 import jwt
@@ -80,8 +81,20 @@ class RestResource(BaseModel):
                 "errors": [],
             }
 
+        except ValidationError as e:
+            errors = []
+            for field_name, messages in e:
+                for message in messages:
+                    errors.append({
+                        "message": message,
+                        "unique_name": f"INVALID_FIELD:{field_name}",
+                        "is_internal": False,
+                    })
+            
+            return { "payload": None, "errors": errors }
+
+
         except Exception as e:
-            print(e)
             return {
                 "payload": None,
                 "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY ]

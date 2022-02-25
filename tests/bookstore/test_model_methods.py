@@ -153,3 +153,8 @@ class TestModelMethods(TestCase):
     def test_create_one_fails_when_missing_fields(self):
         result = Author.create_one(last_name = "Lewis")
         self.assertIsNone(result['payload'])
+        self.assertEqual(result['errors'], [{
+            'unique_name': 'INVALID_FIELD:first_name',
+            'message': 'This field cannot be blank.',
+            'is_internal': False
+        }])
