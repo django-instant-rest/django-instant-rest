@@ -149,3 +149,7 @@ class TestModelMethods(TestCase):
         self.assertEqual(result['payload']['first_name'], 'JRR')
         self.assertEqual(result['payload']['last_name'], 'Tolkein')
         self.assertEqual(result['errors'], [])
+
+    def test_create_one_fails_when_missing_fields(self):
+        result = Author.create_one(last_name = "Lewis")
+        self.assertIsNone(result['payload'])
