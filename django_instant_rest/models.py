@@ -71,34 +71,35 @@ class RestResource(BaseModel):
                     related_model = field.field.related_model
                     input[key] = related_model.objects.get(id = input[key])
 
-            # Validating and storing the data
+            # Validating and storing data
             model_instance = cls(**input)
             model_instance.full_clean()
             model_instance.save()
-            
-            return {
-                "payload": model_instance.to_dict(),
-                "errors": [],
-            }
+
+            payload = model_instance.to_dict()
+            return { "payload": payload, "errors": [] }
 
         except ValidationError as e:
-            errors = []
-            for field_name, messages in e:
-                for message in messages:
-                    errors.append({
-                        "message": message,
-                        "unique_name": f"INVALID_FIELD:{field_name}",
-                        "is_internal": False,
-                    })
-            
+            errors = cls._unpack_validation_error(e)
             return { "payload": None, "errors": errors }
 
-
         except Exception as e:
-            return {
-                "payload": None,
-                "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY ]
-            }
+            errors = [ CREATE_ONE_FAILED_UNEXPECTEDLY ]
+            return { "payload": None, "errors": errors }
+
+    @classmethod
+    def _unpack_validation_error(cls, e):
+        errors = []
+        for field_name, messages in e:
+            for message in messages:
+                errors.append({
+                    "message": message,
+                    "unique_name": f"INVALID_FIELD:{field_name}",
+                    "is_internal": False,
+                })
+
+        return errors
+        
 
     @classmethod
     def get_many(cls, **input):
