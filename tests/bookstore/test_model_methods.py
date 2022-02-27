@@ -158,3 +158,21 @@ class TestModelMethods(TestCase):
             'message': 'This field cannot be blank.',
             'is_internal': False
         }])
+
+    def test_create_one_input_can_be_modified_by_hooks(self):
+        def capitalize_first_and_last_name(**input):
+            first_name = input.get('first_name', None)
+            last_name = input.get('last_name', None)
+            if (first_name):
+                input['first_name'] = first_name.capitalize()
+            if (last_name):
+                input['last_name'] = last_name.capitalize()
+            return (input, None)
+
+        Author.Hooks.before_create_one.append(capitalize_first_and_last_name)
+        result = Author.create_one(first_name="harry", last_name="truman")
+        Author.Hooks.before_create_one.clear()
+
+        self.assertEqual(result['payload']['first_name'], 'Harry')
+        self.assertEqual(result['payload']['last_name'], 'Truman')
+
