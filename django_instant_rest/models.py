@@ -60,9 +60,39 @@ class RestResource(BaseModel):
     class Hooks:
         before_get_many = []
         after_get_many = []
+        before_create_one = []
+        after_create_one = []
 
     @classmethod
     def create_one(cls, **input):
+        try:
+            output = None
+
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_create_one:
+                input, errors = hook_fn(**input)
+
+                if errors:
+                    output = { "payload": None, "errors": errors }
+                    break
+
+            # Performing the actual data fetching
+            output = output if output else cls._raw_create_one(**input)
+
+            # Applying post-operation hooks
+            for hook_fn in cls.Hooks.after_create_one:
+                output = hook_fn(**output)
+
+            return output
+
+        except Exception as e:
+            print('E:', e)
+            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY] }
+
+
+
+    @classmethod
+    def _raw_create_one(cls, **input):
         try:
             for key in input:
                 field = getattr(cls, key)
@@ -81,10 +111,6 @@ class RestResource(BaseModel):
 
         except ValidationError as e:
             errors = cls._unpack_validation_error(e)
-            return { "payload": None, "errors": errors }
-
-        except Exception as e:
-            errors = [ CREATE_ONE_FAILED_UNEXPECTEDLY ]
             return { "payload": None, "errors": errors }
 
     @classmethod
@@ -121,7 +147,7 @@ class RestResource(BaseModel):
                     break
 
             # Performing the actual data fetching
-            output = output if output else cls.__raw_get_many(**input)
+            output = output if output else cls._raw_get_many(**input)
 
             # Applying post-operation hooks
             for hook_fn in cls.Hooks.after_get_many:
@@ -133,7 +159,7 @@ class RestResource(BaseModel):
             return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY] }
 
     @classmethod
-    def __raw_get_many(cls, **input):
+    def _raw_get_many(cls, **input):
         """Performs the pagination and data fetching for get_many()"""
         
         # Building a queryset using filtering and ordering params
