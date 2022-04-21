@@ -175,4 +175,3 @@ class TestModelMethods(TestCase):
 
         self.assertEqual(result['payload']['first_name'], 'Harry')
         self.assertEqual(result['payload']['last_name'], 'Truman')
-
