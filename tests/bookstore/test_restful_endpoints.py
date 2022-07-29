@@ -25,14 +25,14 @@ class TestResourceModel(TestCase):
     def test_get_requests_return_model_instances(self):
         response = self.client.get('/authors')
         body = deserialize(response.content)
-        self.assertEqual(len(body['data']), 3)
+        self.assertEqual(len(body['payload']['nodes']), 3)
 
     def test_get_by_id_requests_return_model_instance_fields(self):
         response = self.client.get('/authors/2')
         self.assertEqual(response.status_code, 200)
 
         body = deserialize(response.content)
-        author = body['data']
+        author = body['payload']
 
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Agatha')
@@ -41,7 +41,7 @@ class TestResourceModel(TestCase):
         self.assertIsInstance(author['updated_at'], str)
 
     # In the future, this should use better error (status codes and enum).
-    # body['data'] should also be None
+    # body['payload']['nodes'] should also be None
     def test_get_by_id_requests_return_errors_when_id_doesnt_exist(self):
         response = self.client.get('/authors/4')
         self.assertEqual(response.status_code, 200)
@@ -54,7 +54,7 @@ class TestResourceModel(TestCase):
         self.assertEqual(response.status_code, 200)
 
         body = deserialize(response.content)
-        author = body['data'][0]
+        author = body['payload']['nodes'][0]
 
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Stephen')
@@ -65,38 +65,38 @@ class TestResourceModel(TestCase):
     def test_get_requests_return_pagination_data(self):
         response = self.client.get('/authors')
         body = deserialize(response.content)
-        self.assertIsInstance(body['first_cursor'], str)
-        self.assertIsInstance(body['last_cursor'], str)
-        self.assertIsInstance(body['has_next_page'], bool)
+        self.assertIsInstance(body['payload']['first_cursor'], str)
+        self.assertIsInstance(body['payload']['last_cursor'], str)
+        self.assertIsInstance(body['payload']['has_next_page'], bool)
 
     def test_get_requests_respect_filter_params(self):
         response = self.client.get('/authors?first_name__startswith=A')
         body = deserialize(response.content)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 2)
+        self.assertEqual(len(body['payload']['nodes']), 2)
 
     def test_get_requests_respect_forward_pagination(self):
         response = self.client.get('/authors?first=1')
         body = deserialize(response.content)
 
-        self.assertEqual(len(body['data']), 1)
+        self.assertEqual(len(body['payload']['nodes']), 1)
         self.assertEqual(response.status_code, 200)
 
-        author = body['data'][0]
+        author = body['payload']['nodes'][0]
         self.assertEqual(author['first_name'], 'Stephen')
 
-        cursor = body['first_cursor']
+        cursor = body['payload']['first_cursor']
 
         response = self.client.get('/authors?first=3&after=' + cursor)
         body = deserialize(response.content)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 2)
+        self.assertEqual(len(body['payload']['nodes']), 2)
 
-        author = body['data'][0]
+        author = body['payload']['nodes'][0]
         self.assertEqual(author['first_name'], 'Agatha')
 
-        author = body['data'][1]
+        author = body['payload']['nodes'][1]
         self.assertEqual(author['first_name'], 'Akira')
 
     def test_get_requests_respect_backward_pagination(self):
@@ -104,30 +104,30 @@ class TestResourceModel(TestCase):
         body = deserialize(response.content)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 1)
+        self.assertEqual(len(body['payload']['nodes']), 1)
 
-        author = body['data'][0]
+        author = body['payload']['nodes'][0]
         self.assertEqual(author['first_name'], 'Akira')
 
-        cursor = body['first_cursor']
+        cursor = body['payload']['first_cursor']
 
         response = self.client.get('/authors?last=3&before=' + cursor)
         body = deserialize(response.content)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 2)
+        self.assertEqual(len(body['payload']['nodes']), 2)
 
-        author = body['data'][0]
+        author = body['payload']['nodes'][0]
         self.assertEqual(author['first_name'], 'Stephen')
 
-        author = body['data'][1]
+        author = body['payload']['nodes'][1]
         self.assertEqual(author['first_name'], 'Agatha')
 
     def test_get_requests_respect_relational_filters(self):
         response = self.client.get('/books?author__first_name=Stephen')
         body = deserialize(response.content)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(body['data']), 1)
+        self.assertEqual(len(body['payload']['nodes']), 1)
 
     def test_post_requests_create_new_instances(self):
         response = self.client.post(
@@ -138,7 +138,7 @@ class TestResourceModel(TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
-        author = body['data']
+        author = body['payload']
 
         self.assertIsNotNone(author['id'])
         self.assertEqual(author['first_name'], 'Tom')

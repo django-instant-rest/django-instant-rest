@@ -99,6 +99,7 @@ def paginate(queryset, first, last, after=None, before=None):
             "error": PAGINATION_CURSOR_INVALID,
         }
     except Exception as e:
+        raise e
         return {
             "queryset": None,
             "has_next_page": False,

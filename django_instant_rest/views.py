@@ -1,6 +1,7 @@
 
 from .pagination import paginate, encode_cursor
 from .casing import camel_keys, snake_keys
+from .errors import *
 
 import jwt
 import json
@@ -10,7 +11,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models.fields import DateTimeField
 from django.utils.timezone import make_aware
 from django.db.utils import IntegrityError
-from django.db import OperationalError
 from django.core.exceptions import ValidationError
 
 
@@ -63,118 +63,62 @@ def date_fields(model):
     field_names = [f.name for f in model._meta.fields]
     return list(filter(is_date_field, field_names))
 
-# A set of query string parameter keys that should not be used for filtering
-filter_key_blacklist = { "order_by", }
 
 def read_many(model, camel = False):
     def request_handler(request):
-        params = { key: request.GET.get(key) for key in request.GET }
-        queryset = None
-
-        # Parsing datestrings found in params
-        for key in params:
-            for field in date_fields(model):
-                if key.startswith(field):
-                    try:
-                        params[key] = datetime.fromisoformat(params[key])
-                    except:
-                        message = f"Invalid date string provided for field {key}"
-                        invalid_date_err = { "message": message }
-                        return JsonResponse({"errors": [invalid_date_err]})
-
-        # Collecting filter parameters
-        for key in params:
-            if key in filter_key_blacklist:
-                continue
-
-            try:
-                queryset = model.objects.filter(**{key : params[key]})
-            except:
-                pass
-
-        # Using the default queryset because no filters were provided
-        if queryset is None:
-            queryset = model.objects.all()
-
-        # Applying queryset ordering if requested, allowing multiple comma
-        # separated values
         try:
-            if "order_by" in params:
-                order_by_args = params["order_by"].split(",")
-                queryset = queryset.order_by(*order_by_args)
-        except:
-            pass
+            params = { key: request.GET.get(key) for key in request.GET }
+            queryset = None
 
-        # Collecting pagination parameters
-        before = params.get("before")
-        after = params.get("after")
+            # Parsing datestrings found in params
+            for key in params:
+                for field in date_fields(model):
+                    if key.startswith(field):
+                        try:
+                            params[key] = datetime.fromisoformat(params[key])
+                        except:
+                            return JsonResponse({ "payload": None, "errors": [INVALID_DATE_RECIEVED(key)]})
 
-        if before and after:
-            return JsonResponse({"errors": [extra_cursor_param_err]})
+            # Collecting pagination params
+            first = params.pop('first', None)
+            first = int(first) if first else None
 
-        try:
-            if params.get('first'):
-                first = int(params.get('first'))
-            else:
-                first = None
-        except:
-            return JsonResponse({"errors": [invalid_first_param_err]})
+            last = params.pop('last', None)
+            last = int(last) if last else None
 
-        try:
-            if params.get('last'):
-                last = int(params.get('last'))
-            else:
-                last = None
-        except:
-            return JsonResponse({"errors": [invalid_last_param_err]})
+            after = params.pop('after', None)
+            before = params.pop('before', None)
 
-        if first and last:
-            return JsonResponse({"errors": [extra_quantity_param_err]})
+            # Collecting ordering params
+            order_by = params.pop('order_by', None)
+            order_by = order_by.split(",") if order_by else []
 
-        # Assigning a default page size
-        # if none was provided.
-        if not first and not last:
-            first = 50
-
-        try:
-            pagination = paginate(queryset, first, last, after, before)
-
-        except OperationalError:
-            return JsonResponse({"errors": [database_operation_err]})
-
-        except Exception as e:
-            if 'base64' in str(e):
-                if before:
-                    return JsonResponse({"errors": [invalid_before_param_err]})
-                if after:
-                    return JsonResponse({"errors": [invalid_after_param_err]})
-
-            return JsonResponse({"errors": [unknown_pagination_err]})
-            
-        page = list(pagination['queryset'])
-        has_next_page = pagination['has_next_page']
-        data = list(map(lambda m: m.to_dict(), page))
-
-        payload = {
-            'first_cursor': None,
-            'last_cursor': None,
-            'has_next_page': False,
-            'data': [],
-        }
-
-        if len(page) > 0:
-            payload = {
-                'first_cursor': encode_cursor(page[0]),
-                'last_cursor': encode_cursor(page[-1]),
-                'has_next_page': has_next_page,
-                'data': data,
+            get_many_args = {
+                'first': first,
+                'last': last,
+                'after': after,
+                'before': before,
+                'order_by': order_by,
+                'filters': params,
             }
 
-        if (camel):
-            payload = camel_keys(payload)
-            payload["data"] = [ camel_keys(item) for item in payload["data"] ]
+            # Collecting filter parameters
+            results = model.get_many(**get_many_args)
+            payload = results['payload']
+            errors = results['errors']
 
-        return JsonResponse(payload)
+            # Applying Camel Casing
+            if (camel):
+                payload = camel_keys(payload)
+
+            return JsonResponse({ 'payload': payload, 'errors': errors })
+        
+        except Exception as e:
+            raise e
+            # import traceback
+            # traceback.format_exc()
+
+            return JsonResponse({ 'payload': None, 'errors': [GET_MANY_FAILED_UNEXPECTEDLY('view', e)] })
 
     
     return request_handler
@@ -193,7 +137,7 @@ def read_one(model, camel=False):
             if camel:
                 payload = camel_keys(payload)
 
-            return JsonResponse({ "data" : payload })
+            return JsonResponse({ "payload" : payload })
         except:
             return JsonResponse({ "errors": [id_not_exists_err] })
 
@@ -223,7 +167,7 @@ def create_one(model, camel=False):
             if camel:
                 payload = camel_keys(payload)
 
-            return JsonResponse({ "data" : payload })
+            return JsonResponse({ "payload" : payload })
 
         # Exposing Attribute errors, because they're end-user friendly
         except AttributeError as inst:

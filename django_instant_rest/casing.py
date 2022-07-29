@@ -9,9 +9,13 @@ def camel(snake_str):
 def snake(camel_str):
     return re.sub(r'(?<!^)(?=[A-Z])', '_', camel_str).lower()
 
-def camel_keys(dictionary):
-    return { camel(key): value for (key, value) in dictionary.items() }
+def camel_keys(maybe_dict):
+    if type(maybe_dict) != dict:
+        return maybe_dict
+    return { camel(key): camel_keys(value) for (key, value) in maybe_dict.items() }
 
-def snake_keys(dictionary):
-    return { snake(key): value for (key, value) in dictionary.items() }
+def snake_keys(maybe_dict):
+    if type(maybe_dict) != dict:
+        return maybe_dict
+    return { snake(key): snake_keys(value) for (key, value) in maybe_dict.items() }
 
