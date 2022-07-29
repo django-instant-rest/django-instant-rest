@@ -183,16 +183,19 @@ def read_many(model, camel = False):
 def read_one(model, camel=False):
     def request_handler(request, id):
         try:
-            obj = model.objects.get(id=id)
+            result = model.get_one(id=id)
+            payload = result['payload']
+            errors = result['errors']
+        
+            if len(errors):
+                return JsonResponse({ "errors" : errors })
+
+            if camel:
+                payload = camel_keys(payload)
+
+            return JsonResponse({ "data" : payload })
         except:
             return JsonResponse({ "errors": [id_not_exists_err] })
-
-        data = obj.to_dict()
-
-        if (camel):
-            data = camel_keys(data)
-
-        return JsonResponse({ "data": data })
 
     return request_handler
 

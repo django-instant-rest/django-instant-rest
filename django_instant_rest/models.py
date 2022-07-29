@@ -58,7 +58,9 @@ class RestResource(BaseModel):
         default_page_size = 50
     
     class Hooks:
+        before_get_one = []
         before_get_many = []
+        after_get_one = []
         after_get_many = []
         before_create_one = []
         after_create_one = []
@@ -86,7 +88,6 @@ class RestResource(BaseModel):
             return output
 
         except Exception as e:
-            print('E:', e)
             return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY] }
 
 
@@ -126,6 +127,44 @@ class RestResource(BaseModel):
 
         return errors
         
+
+    @classmethod
+    def get_one(cls, id):
+        """
+        Retrieve a single model instance as a dictionary,
+        respecting user defined hook functions that run before and
+        after data is retrieved.
+        """
+        try:
+            output = None
+
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_get_one:
+                input, errors = hook_fn(**input)
+
+                if errors:
+                    output = { "payload": None, "errors": errors }
+                    return output
+
+            # Performing the actual data fetching
+            model_instance = cls.objects.get(id=id)
+            output = { 'payload': model_instance.to_dict(), 'errors': [] }
+
+            # Applying post-operation hooks
+            for hook_fn in cls.Hooks.after_get_one:
+                output = hook_fn(**output)
+
+            return output
+
+        except cls.DoesNotExist:
+            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
+
+        except Exception as e:
+            print(type(e))
+            print('EXC: ', e)
+            return { "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY] }
+
+
 
     @classmethod
     def get_many(cls, **input):

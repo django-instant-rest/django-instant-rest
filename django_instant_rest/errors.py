@@ -1,7 +1,18 @@
+OBJECT_WITH_ID_DOES_NOT_EXIST = lambda id : {
+    'unique_name': 'OBJECT_WITH_ID_DOES_NOT_EXIST ',
+    'message': f'Object with ID "{id}" does not exist',
+    'is_internal': False,
+}
 
 CREATE_ONE_FAILED_UNEXPECTEDLY = {
     'unique_name': 'CREATE_ONE_FAILED_UNEXPECTEDLY ',
     'message': 'Failed unexpectedly while trying to store a new object',
+    'is_internal': True,
+}
+
+GET_ONE_FAILED_UNEXPECTEDLY = {
+    'unique_name': 'GET_ONE_FAILED_UNEXPECTEDLY ',
+    'message': 'Failed unexpectedly while trying to retrieve an object',
     'is_internal': True,
 }
 
