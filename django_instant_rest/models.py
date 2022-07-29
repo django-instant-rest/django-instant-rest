@@ -195,7 +195,6 @@ class RestResource(BaseModel):
             return output
 
         except Exception as e:
-            raise e
             return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY('hooks', e)] }
 
     @classmethod

@@ -93,6 +93,7 @@ def read_many(model, camel = False):
             order_by = params.pop('order_by', None)
             order_by = order_by.split(",") if order_by else []
 
+            # Aggregating params
             get_many_args = {
                 'first': first,
                 'last': last,
@@ -114,10 +115,6 @@ def read_many(model, camel = False):
             return JsonResponse({ 'payload': payload, 'errors': errors })
         
         except Exception as e:
-            raise e
-            # import traceback
-            # traceback.format_exc()
-
             return JsonResponse({ 'payload': None, 'errors': [GET_MANY_FAILED_UNEXPECTEDLY('view', e)] })
 
     
@@ -307,6 +304,7 @@ def authenticate(client_model):
             token = c.authenticate(credentials["password"])
 
             if not token:
+                # TODO
                 raise
                 
             return JsonResponse({ "data": { "token": token } })
