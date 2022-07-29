@@ -175,3 +175,24 @@ class TestModelMethods(TestCase):
 
         self.assertEqual(result['payload']['first_name'], 'Harry')
         self.assertEqual(result['payload']['last_name'], 'Truman')
+
+    def test_default_hooks_can_be_inherited(self):
+
+        class Things(RestResource):
+            first_name = models.CharField(max_length=255)
+            last_name = models.CharField(max_length=255)
+
+            class Hooks(RestResource.Hooks):
+                before_create_one = [
+                    lambda **input: (input, None)
+                ]
+
+        self.assertEqual(1, len(Things.Hooks.before_create_one))
+        self.assertEqual(0, len(Things.Hooks.after_create_one))
+
+        self.assertEqual(0, len(Things.Hooks.before_get_one))
+        self.assertEqual(0, len(Things.Hooks.after_get_one))
+
+        self.assertEqual(0, len(Things.Hooks.before_get_many))
+        self.assertEqual(0, len(Things.Hooks.after_get_many))
+
