@@ -198,35 +198,29 @@ def read_one(model, camel=False):
 
 
 def create_one(model, camel=False):
+
     @csrf_exempt
     def request_handler(request):
         try:
-            data = json.loads(request.body.decode("utf-8"))
+            fields = json.loads(request.body.decode("utf-8"))
             if camel:
-                data = snake_keys(data)
-
+                fields = snake_keys(fields)
+        
         except:
             return JsonResponse({"errors": [invalid_json_err]})
 
         try:
-            for key in data:
-                field = getattr(model, key)
-
-                if field.field.is_relation is True and data[key] != None:
-                    related_model = field.field.related_model
-                    data[key] = related_model.objects.get(id = data[key])
-
-            # Validating and storing the data
-            model_instance = model(**data)
-            model_instance.full_clean()
-            model_instance.save()
-            
-            data = model_instance.to_dict()
+            result = model.create_one(**fields)
+            payload = result['payload']
+            errors = result['errors']
+        
+            if len(errors):
+                return JsonResponse({ "errors" : errors })
 
             if camel:
-                data = camel_keys(data)
+                payload = camel_keys(payload)
 
-            return JsonResponse({ "data" : data })
+            return JsonResponse({ "data" : payload })
 
         # Exposing Attribute errors, because they're end-user friendly
         except AttributeError as inst:
@@ -237,7 +231,7 @@ def create_one(model, camel=False):
         except IntegrityError as e:
             return JsonResponse({ "errors": [database_integrity_err] })
 
-        # Handling field validation and uniquness errors
+        # Handling field validation and uniqueness errors
         except ValidationError as e:
             errors = format_validation_error(e, camel=camel)
             return JsonResponse({ "errors": errors })
