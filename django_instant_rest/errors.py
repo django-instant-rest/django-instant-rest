@@ -34,6 +34,12 @@ CREATE_ONE_FAILED_UNEXPECTEDLY = {
     'is_internal': True,
 }
 
+DELETE_ONE_FAILED_UNEXPECTEDLY = {
+    'unique_name': 'DELETE_ONE_FAILED_UNEXPECTEDLY ',
+    'message': 'Failed unexpectedly while trying to delete an object',
+    'is_internal': True,
+}
+
 GET_ONE_FAILED_UNEXPECTEDLY = {
     'unique_name': 'GET_ONE_FAILED_UNEXPECTEDLY ',
     'message': 'Failed unexpectedly while trying to retrieve an object',
@@ -42,9 +48,6 @@ GET_ONE_FAILED_UNEXPECTEDLY = {
 
 def GET_MANY_FAILED_UNEXPECTEDLY(region = 'unknown', exception = None):
     print(f'Unexpected failure in region "{region}": {exception}')
-
-    # import traceback
-    # traceback.print_stack()
 
     return {
         'unique_name': 'GET_MANY_FAILED_UNEXPECTEDLY ',

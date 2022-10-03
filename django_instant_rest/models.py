@@ -59,12 +59,17 @@ class RestResource(BaseModel):
         default_page_size = 50
     
     class Hooks:
-        before_get_one = []
-        before_get_many = []
-        after_get_one = []
-        after_get_many = []
+        before_anything = []
         before_create_one = []
+        before_delete_one = []
+        before_get_many = []
+        before_get_one = []
+
+        after_anything = []
         after_create_one = []
+        after_delete_one = []
+        after_get_many = []
+        after_get_one = []
 
     @classmethod
     def create_one(cls, **input):
@@ -91,6 +96,45 @@ class RestResource(BaseModel):
         except Exception as e:
             return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY] }
 
+
+    @classmethod
+    def delete_one(cls, **input):
+        try:
+            output = None
+
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_delete_one:
+                input, errors = hook_fn(**input)
+
+                if errors:
+                    output = { "payload": None, "errors": errors }
+                    break
+
+            # Performing the actual storage operation
+            output = output if output else cls._raw_delete_one(**input)
+
+            # Applying post-operation hooks
+            for hook_fn in cls.Hooks.after_delete_one + cls.Hooks.after_anything:
+                output = hook_fn(**output)
+
+            return output
+
+        except Exception as e:
+            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY] }
+
+
+
+    @classmethod
+    def _raw_delete_one(cls, id):
+        '''Tries to delete a an existing model instance'''
+        try:
+            model_instance = model.objects.get(id=id)
+            model_instance.delete()
+            payload = model_instance.to_dict()
+            return { "payload" : data, "errors": [] }
+
+        except:
+            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
 
     @classmethod

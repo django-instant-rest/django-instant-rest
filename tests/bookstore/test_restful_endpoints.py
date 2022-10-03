@@ -172,7 +172,9 @@ class TestResourceModel(TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
-        book = body['data']
+
+        self.assertEqual(len(body['errors']), 0)
+        book = body['payload']
 
         self.assertIsNotNone(book['id'])
         self.assertEqual(book['title'], 'IT')
@@ -204,7 +206,7 @@ class TestResourceModel(TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
-        author = body['data']
+        author = body['payload']
 
         # This should not be none in the future
         self.assertIsNone(author['id'])
