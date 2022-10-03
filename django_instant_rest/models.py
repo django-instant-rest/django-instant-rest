@@ -125,16 +125,21 @@ class RestResource(BaseModel):
 
 
     @classmethod
-    def _raw_delete_one(cls, id):
+    def _raw_delete_one(cls, **input):
         '''Tries to delete a an existing model instance'''
+        id = input.get('id', None)
+
         try:
-            model_instance = model.objects.get(id=id)
+            model_instance = cls.objects.get(id=id)
             model_instance.delete()
             payload = model_instance.to_dict()
-            return { "payload" : data, "errors": [] }
+            return { "payload" : payload, "errors": [] }
 
-        except:
+        except cls.DoesNotExist:
             return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
+
+        except Exception as e:
+            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY] }
 
 
     @classmethod
@@ -175,13 +180,14 @@ class RestResource(BaseModel):
         
 
     @classmethod
-    def get_one(cls, id):
+    def get_one(cls, **input):
         """
         Retrieve a single model instance as a dictionary,
         respecting user defined hook functions that run before and
         after data is retrieved.
         """
         try:
+            id = input.get('id', None)
             output = None
 
             # Applying pre-operation hooks

@@ -243,11 +243,9 @@ def delete_one(model):
     @csrf_exempt
     def request_handler(request, id):
         try:
-            obj = model.objects.get(id=id)
-            obj.delete()
-            data = obj.to_dict()
-            return JsonResponse({ "payload" : data, "errors": [] })
-        except:
+            result = model.delete_one(id=int(id))
+            return JsonResponse(result)
+        except Exception as e:
             return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
 
     return request_handler

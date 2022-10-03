@@ -4,3 +4,4 @@
 - Test combinations of filtering and order_by
 - Test interaction between pagination and order_by
 - Consider solutions to cursor collisions
+- Look at REST view functions, and use more appropriate errors for exceptions.
