@@ -178,25 +178,24 @@ class TestModelMethods(TestCase):
 
 
     def test_before_anything_hook_runs_first(self):
-        def capitalize_first_name(**input):
-            first_name = input.get('first_name', None)
-            if (first_name):
-                input['first_name'] = first_name.capitalize()
+        def make_bill(**input):
+            input['first_name'] = "Bill"
             return (input, None)
 
-        def lowercase_first_name(**input):
-            first_name = input.get('first_name', None)
-            if (first_name):
-                input['first_name'] = first_name.lower()
+        def make_benjamin(**input):
+            input['first_name'] = "Benjamin"
             return (input, None)
 
-        Author.Hooks.before_anything.append(lowercase_first_name)
-        Author.Hooks.before_create_one.append(capitalize_first_name)
-        result = Author.create_one(first_name="RONALD", last_name="REAGAN")
+        Author.Hooks.before_anything.append(make_benjamin)
+        result = Author.create_one(first_name="Melinda", last_name="Gates")
+        self.assertEqual(result['payload']['first_name'], 'Benjamin')
+
+        Author.Hooks.before_create_one.append(make_bill)
+        result = Author.create_one(first_name="Melinda", last_name="Gates")
+        self.assertEqual(result['payload']['first_name'], 'Bill')
+
         Author.Hooks.before_anything.clear()
         Author.Hooks.before_create_one.clear()
-
-        self.assertEqual(result['payload']['first_name'], 'Ronald')
 
 
 

@@ -77,7 +77,7 @@ class RestResource(BaseModel):
             output = None
 
             # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_create_one:
+            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_create_one:
                 input, errors = hook_fn(**input)
 
                 if errors:
@@ -88,7 +88,7 @@ class RestResource(BaseModel):
             output = output if output else cls._raw_create_one(**input)
 
             # Applying post-operation hooks
-            for hook_fn in cls.Hooks.after_create_one:
+            for hook_fn in cls.Hooks.after_anything + cls.Hooks.after_create_one:
                 output = hook_fn(**output)
 
             return output
