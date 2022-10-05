@@ -172,7 +172,6 @@ class TestResourceModel(TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = deserialize(response.content)
-        print('BODY', body)
 
         self.assertEqual(len(body['errors']), 0)
         book = body['payload']

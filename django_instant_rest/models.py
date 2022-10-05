@@ -12,6 +12,8 @@ import jwt
 HOOKS = 'HOOKS'
 STORAGE = 'STORAGE'
 
+REGION = 'MODEL_STORAGE'
+
 class BaseModel(models.Model):
     '''A generic model with commonly used methods'''
 
@@ -76,29 +78,36 @@ class RestResource(BaseModel):
         after_update_one = []
 
     @classmethod
-    def create_one(cls, **input):
-        try:
-            output = None
+    def with_hooks(cls, fn, fn_name):
+        def wrapper(**input):
+            try:
+                output = None
 
-            # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_create_one:
-                input, errors = hook_fn(**input)
+                # Applying pre-operation hooks
+                after_hooks = getattr(cls.Hooks, f"after_{fn_name}")
+                before_hooks = getattr(cls.Hooks, f"before_{fn_name}")
 
-                if errors:
-                    output = { "payload": None, "errors": errors }
-                    break
+                for hook_fn in cls.Hooks.before_anything + before_hooks:
+                    input, errors = hook_fn(**input)
 
-            # Performing the actual data fetching
-            output = output if output else cls._raw_create_one(**input)
+                    if errors:
+                        output = { "payload": None, "errors": errors }
+                        break
 
-            # Applying post-operation hooks
-            for hook_fn in cls.Hooks.after_anything + cls.Hooks.after_create_one:
-                output = hook_fn(**output)
+                # Performing the actual data fetching
+                output = output if output else fn(**input)
 
-            return output
+                # Applying post-operation hooks
+                for hook_fn in cls.Hooks.after_anything + after_hooks:
+                    output = hook_fn(**output)
 
-        except Exception as e:
-            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
+                return output 
+
+            except Exception as e:
+                error = _FAILED_UNEXPECTEDLY('applying hooks', region = REGION, exception = e)
+                return { "payload": None, "errors": [error] }
+        
+        return wrapper
 
 
     @classmethod
@@ -214,30 +223,35 @@ class RestResource(BaseModel):
 
 
     @classmethod
-    def _raw_create_one(cls, **input):
+    def create_one(cls, **input):
         '''Tries to store a new model instance'''
-        try:
-            for key in input:
-                field = getattr(cls, key)
 
-                if field.field.is_relation is True and input[key] != None:
-                    related_model = field.field.related_model
-                    input[key] = related_model.objects.get(id = input[key])
+        def inner_fn(**input):
+            try:
+                for key in input:
+                    field = getattr(cls, key)
 
-            # Validating and storing data
-            model_instance = cls(**input)
-            model_instance.full_clean()
-            model_instance.save()
+                    if field.field.is_relation is True and input[key] != None:
+                        related_model = field.field.related_model
+                        input[key] = related_model.objects.get(id = input[key])
 
-            payload = model_instance.to_dict()
-            return { "payload": payload, "errors": [] }
+                # Validating and storing data
+                model_instance = cls(**input)
+                model_instance.full_clean()
+                model_instance.save()
 
-        except ValidationError as e:
-            errors = cls._unpack_validation_error(e)
-            return { "payload": None, "errors": errors }
+                payload = model_instance.to_dict()
+                return { "payload": payload, "errors": [] }
 
-        except Exception as e:
-            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
+            except ValidationError as e:
+                errors = cls._unpack_validation_error(e)
+                return { "payload": None, "errors": errors }
+
+            except Exception as e:
+                error = _FAILED_UNEXPECTEDLY('storing new object', region = REGION, exception = e)
+                return { "payload": None, "errors": [error] }
+        
+        return cls.with_hooks(inner_fn, 'create_one')(**input)
 
 
     @classmethod

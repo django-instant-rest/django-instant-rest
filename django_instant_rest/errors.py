@@ -40,6 +40,15 @@ def FAILED_UNEXPECTEDLY(prefix = '', action = 'perform an unspecified task'):
         }
     return handler
 
+def _FAILED_UNEXPECTEDLY( action = 'performing an unspecified task', region = 'UNSPECIFIED', exception = None):
+    return {
+        'unique_name': f"FAILED_UNEXPECTEDLY",
+        'message': 'Failed unexpectedly while {action}.',
+        'is_internal': True,
+        '_exception': str(exception),
+        '_region': region,
+    }
+
 
 GET_MANY_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_MANY_', 'retrieve a list of object')
 GET_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_ONE_', 'retrieve a single object')
