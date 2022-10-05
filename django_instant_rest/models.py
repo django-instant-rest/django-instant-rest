@@ -112,29 +112,25 @@ class RestResource(BaseModel):
 
     @classmethod
     def delete_one(cls, **input):
-        try:
-            output = None
+        '''Tries to delete a an existing model instance'''
 
-            # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_delete_one:
-                input, errors = hook_fn(**input)
+        def inner_fn(**input):
+            id = input.get('id', None)
 
-                if errors:
-                    output = { "payload": None, "errors": errors }
-                    break
+            try:
+                model_instance = cls.objects.get(id=id)
+                model_instance.delete()
+                payload = model_instance.to_dict()
+                return { "payload" : payload, "errors": [] }
 
-            # Performing the actual storage operation
-            output = output if output else cls._raw_delete_one(**input)
+            except cls.DoesNotExist:
+                return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
-            # Applying post-operation hooks
-            for hook_fn in cls.Hooks.after_delete_one + cls.Hooks.after_anything:
-                output = hook_fn(**output)
-
-            return output
-
-        except Exception as e:
-            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
-
+            except Exception as e:
+                error = _FAILED_UNEXPECTEDLY('deleting an object', region = REGION, exception = e)
+                return { "payload": None, "errors": [error] }
+        
+        return cls.with_hooks(inner_fn, 'delete_one')(**input)
 
     @classmethod
     def update_one(cls, **input):
@@ -161,23 +157,6 @@ class RestResource(BaseModel):
         except Exception as e:
             return { "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
-
-    @classmethod
-    def _raw_delete_one(cls, **input):
-        '''Tries to delete a an existing model instance'''
-        id = input.get('id', None)
-
-        try:
-            model_instance = cls.objects.get(id=id)
-            model_instance.delete()
-            payload = model_instance.to_dict()
-            return { "payload" : payload, "errors": [] }
-
-        except cls.DoesNotExist:
-            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
-
-        except Exception as e:
-            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
 
 
     @classmethod
