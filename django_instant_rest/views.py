@@ -35,6 +35,8 @@ unknown_storage_err = { "message": "Unable to store the data provided" }
 incorrect_credentials_err = { "message" : "incorrect username/password combination" }
 
 
+REGION = 'REQUEST_HANDLING'
+
 def format_validation_error(e: ValidationError, camel=False):
     errors = []
 
@@ -115,7 +117,7 @@ def read_many(model, camel = False):
             return JsonResponse({ 'payload': payload, 'errors': errors })
         
         except Exception as e:
-            return JsonResponse({ 'payload': None, 'errors': [GET_MANY_FAILED_UNEXPECTEDLY('view', e)] })
+            return JsonResponse({ 'payload': None, 'errors': [GET_MANY_FAILED_UNEXPECTEDLY(REGION, e)] })
 
     
     return request_handler
@@ -135,8 +137,8 @@ def read_one(model, camel=False):
                 payload = camel_keys(payload)
 
             return JsonResponse({ "payload" : payload, "errors": [] })
-        except:
-            return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
+        except Exception as e:
+            return JsonResponse({ "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
 
     return request_handler
 
@@ -182,7 +184,7 @@ def create_one(model, camel=False):
 
         # Handling all other errors generically
         except Exception as e:
-            return JsonResponse({ "payload": None, "errors": [unknown_storage_err] })
+            return JsonResponse({ "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
 
     return request_handler
 
@@ -191,50 +193,20 @@ def update_one(model, camel=False):
     @csrf_exempt
     def request_handler(request, id): 
         try:
-            change_data = json.loads(request.body.decode("utf-8"))
+            input = json.loads(request.body.decode("utf-8"))
+            input['id'] = int(id)
             if camel:
-                change_data = snake_keys(change_data)
+                input = snake_keys(change_data)
 
-        except:
-            return JsonResponse({ "payload": None, "errors": [invalid_json_err]})
+        except Exception as e:
+            return JsonResponse({ "payload": None, "errors": [invalid_json_err] })
 
         try:
-            model_instance = model.objects.get(id=id)
-                
-            for field_name in change_data:
-                field = getattr(model, field_name)
-                if field.field.is_relation is True and data[key] != None:
-                    related_model = field.field.related_model
-                    change_data[field_name] = related_model.objects.get(id = change_data[field_name])
-                setattr(model_instance, field_name, change_data[field_name])
+            return JsonResponse(model.update_one(**input))
+        except Exception as e:
+            return JsonResponse({ "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
 
-            # Validating and storing the data
-            model_instance.full_clean()
-            model_instance.save()
-            data = model_instance.to_dict()
 
-            if camel:
-                data = camel_keys(data)
-
-            return JsonResponse({ "payload" : data, "errors": [] })
-
-        # Exposing Attribute errors, because they're end-user friendly
-        except AttributeError as inst:
-            error = { "message": str(inst) }
-            return JsonResponse({ "payload": None, "errors": [error] })
-        
-        except model.DoesNotExist:
-            # Handling attempts to edit non-existent objects
-            return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
-
-        # Handling field validation and uniquness errors
-        except ValidationError as e:
-            errors = format_validation_error(e, camel=camel)
-            return JsonResponse({ "payload": None, "errors": errors })
-
-        except Exception as inst:
-            # Handling all other errors generically
-            return JsonResponse({ "payload": None, "errors": [invalid_data_err] })
 
     return request_handler
 

@@ -9,6 +9,8 @@ import datetime
 import uuid
 import jwt
 
+HOOKS = 'HOOKS'
+STORAGE = 'STORAGE'
 
 class BaseModel(models.Model):
     '''A generic model with commonly used methods'''
@@ -64,12 +66,14 @@ class RestResource(BaseModel):
         before_delete_one = []
         before_get_many = []
         before_get_one = []
+        before_update_one = []
 
         after_anything = []
         after_create_one = []
         after_delete_one = []
         after_get_many = []
         after_get_one = []
+        after_update_one = []
 
     @classmethod
     def create_one(cls, **input):
@@ -94,7 +98,7 @@ class RestResource(BaseModel):
             return output
 
         except Exception as e:
-            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY] }
+            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
 
     @classmethod
@@ -120,8 +124,33 @@ class RestResource(BaseModel):
             return output
 
         except Exception as e:
-            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY] }
+            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
+
+    @classmethod
+    def update_one(cls, **input):
+        try:
+            output = None
+
+            # Applying pre-operation hooks
+            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_update_one:
+                input, errors = hook_fn(**input)
+
+                if errors:
+                    output = { "payload": None, "errors": errors }
+                    break
+
+            # Performing the actual storage operation
+            output = output if output else cls._raw_update_one(**input)
+
+            # Applying post-operation hooks
+            for hook_fn in cls.Hooks.after_update_one + cls.Hooks.after_anything:
+                output = hook_fn(**output)
+
+            return output
+
+        except Exception as e:
+            return { "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
 
     @classmethod
@@ -139,7 +168,49 @@ class RestResource(BaseModel):
             return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
         except Exception as e:
-            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY] }
+            return { "payload": None, "errors": [DELETE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
+
+
+    @classmethod
+    def _raw_update_one(cls, **input):
+        '''Attempts to update an existing model instance'''
+        try:
+            model_instance = cls.objects.get(id=input.get('id', None))
+
+            for key in input:
+                field = getattr(cls, key)
+
+                if field.field.is_relation is True and input[key] != None:
+                    related_model = field.field.related_model
+                    input[key] = related_model.objects.get(id = input[key])
+
+                setattr(model_instance, key, input[key])
+
+            # Validating and storing data
+            model_instance.full_clean()
+            model_instance.save()
+
+            payload = model_instance.to_dict()
+            return { "payload": payload, "errors": [] }
+
+        except ValidationError as e:
+            errors = cls._unpack_validation_error(e)
+            return { "payload": None, "errors": errors }
+
+        # Exposing Attribute errors, because they're end-user friendly
+        except AttributeError as inst:
+            error = { "message": str(inst) }
+            return { "payload": None, "errors": [error] }
+        
+        except cls.DoesNotExist:
+            # Handling attempts to edit non-existent objects
+            id = input.get('id', None)
+            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
+
+        except Exception as e:
+            return { "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
+
+
 
 
     @classmethod
@@ -164,6 +235,10 @@ class RestResource(BaseModel):
         except ValidationError as e:
             errors = cls._unpack_validation_error(e)
             return { "payload": None, "errors": errors }
+
+        except Exception as e:
+            return { "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
+
 
     @classmethod
     def _unpack_validation_error(cls, e):
@@ -212,7 +287,7 @@ class RestResource(BaseModel):
             return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
         except Exception as e:
-            return { "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY] }
+            return { "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
 
 
@@ -245,7 +320,7 @@ class RestResource(BaseModel):
             return output
 
         except Exception as e:
-            return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY('hooks', e)] }
+            return { "payload": None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY(HOOKS, e)] }
 
     @classmethod
     def _raw_get_many(cls, **input):
@@ -318,7 +393,7 @@ class RestResource(BaseModel):
                 if after:
                     return { 'payload': None, "errors": [INVALID_AFTER_PARAMETER] }
 
-            return { 'payload': None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY('storage', e)] }
+            return { 'payload': None, "errors": [GET_MANY_FAILED_UNEXPECTEDLY(STORAGE, e)] }
             
 
 class RestClient(BaseModel):

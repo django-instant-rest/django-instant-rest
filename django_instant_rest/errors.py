@@ -28,32 +28,24 @@ INVALID_DATE_RECIEVED = lambda field_name : {
     'is_internal': False,
 }
 
-CREATE_ONE_FAILED_UNEXPECTEDLY = {
-    'unique_name': 'CREATE_ONE_FAILED_UNEXPECTEDLY ',
-    'message': 'Failed unexpectedly while trying to store a new object',
-    'is_internal': True,
-}
 
-DELETE_ONE_FAILED_UNEXPECTEDLY = {
-    'unique_name': 'DELETE_ONE_FAILED_UNEXPECTEDLY ',
-    'message': 'Failed unexpectedly while trying to delete an object',
-    'is_internal': True,
-}
+def FAILED_UNEXPECTEDLY(prefix = '', action = 'perform an unspecified task'):
+    def handler(region = 'unknown', exception = None):
+        print(f'Unexpected failure in region "{region}": {exception}')
 
-GET_ONE_FAILED_UNEXPECTEDLY = {
-    'unique_name': 'GET_ONE_FAILED_UNEXPECTEDLY ',
-    'message': 'Failed unexpectedly while trying to retrieve an object',
-    'is_internal': True,
-}
+        return {
+            'unique_name': f"{prefix}FAILED_UNEXPECTEDLY",
+            'message': 'Failed unexpectedly while attempting to {action}.',
+            'is_internal': True,
+        }
+    return handler
 
-def GET_MANY_FAILED_UNEXPECTEDLY(region = 'unknown', exception = None):
-    print(f'Unexpected failure in region "{region}": {exception}')
 
-    return {
-        'unique_name': 'GET_MANY_FAILED_UNEXPECTEDLY ',
-        'message': 'Failed unexpectedly while trying to retrieve a list of objects.',
-        'is_internal': True,
-    }
+GET_MANY_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_MANY_', 'retrieve a list of object')
+GET_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_ONE_', 'retrieve a single object')
+CREATE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('CREATE_ONE_', 'store a new object')
+UPDATE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('UPDATE_ONE_', 'update an existing object')
+DELETE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('DELETE_ONE_', 'delete an existing object')
 
 
 PAGINATION_FAILED_UNEXPECTEDLY = {
