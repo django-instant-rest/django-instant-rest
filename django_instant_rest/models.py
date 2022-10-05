@@ -132,71 +132,51 @@ class RestResource(BaseModel):
         
         return cls.with_hooks(inner_fn, 'delete_one')(**input)
 
+
     @classmethod
     def update_one(cls, **input):
-        try:
-            output = None
-
-            # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_anything + cls.Hooks.before_update_one:
-                input, errors = hook_fn(**input)
-
-                if errors:
-                    output = { "payload": None, "errors": errors }
-                    break
-
-            # Performing the actual storage operation
-            output = output if output else cls._raw_update_one(**input)
-
-            # Applying post-operation hooks
-            for hook_fn in cls.Hooks.after_update_one + cls.Hooks.after_anything:
-                output = hook_fn(**output)
-
-            return output
-
-        except Exception as e:
-            return { "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
-
-
-
-    @classmethod
-    def _raw_update_one(cls, **input):
         '''Attempts to update an existing model instance'''
-        try:
-            model_instance = cls.objects.get(id=input.get('id', None))
-
-            for key in input:
-                field = getattr(cls, key)
-
-                if field.field.is_relation is True and input[key] != None:
-                    related_model = field.field.related_model
-                    input[key] = related_model.objects.get(id = input[key])
-
-                setattr(model_instance, key, input[key])
-
-            # Validating and storing data
-            model_instance.full_clean()
-            model_instance.save()
-
-            payload = model_instance.to_dict()
-            return { "payload": payload, "errors": [] }
-
-        except ValidationError as e:
-            errors = cls._unpack_validation_error(e)
-            return { "payload": None, "errors": errors }
-
-        # Exposing Attribute errors, because they're end-user friendly
-        except AttributeError as inst:
-            error = { "message": str(inst) }
-            return { "payload": None, "errors": [error] }
         
-        except cls.DoesNotExist:
-            # Handling attempts to edit non-existent objects
-            id = input.get('id', None)
-            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
+        def inner_fn(**input):
+            try:
+                model_instance = cls.objects.get(id=input.get('id', None))
 
-        except Exception as e:
-            return { "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(STORAGE, e)] }
+                for key in input:
+                    field = getattr(cls, key)
+
+                    if field.field.is_relation is True and input[key] != None:
+                        related_model = field.field.related_model
+                        input[key] = related_model.objects.get(id = input[key])
+
+                    setattr(model_instance, key, input[key])
+
+                # Validating and storing data
+                model_instance.full_clean()
+                model_instance.save()
+
+                payload = model_instance.to_dict()
+                return { "payload": payload, "errors": [] }
+
+            except ValidationError as e:
+                errors = cls._unpack_validation_error(e)
+                return { "payload": None, "errors": errors }
+
+            # Exposing AttributeErrors, because they're end-user friendly
+            except AttributeError as inst:
+                error = { "message": str(inst) }
+                return { "payload": None, "errors": [error] }
+        
+            # Handling attempts to edit non-existent objects
+            except cls.DoesNotExist:
+                id = input.get('id', None)
+                return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
+
+            except Exception as e:
+                    error = _FAILED_UNEXPECTEDLY('updating an object', region = REGION, exception = e)
+                    return { "payload": None, "errors": [error] }
+        
+        return cls.with_hooks(inner_fn, 'update_one')(**input)
+
 
 
 
