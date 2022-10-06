@@ -126,17 +126,12 @@ def read_many(model, camel = False):
 def read_one(model, camel=False):
     def request_handler(request, id):
         try:
-            result = model.get_one(id=id)
-            payload = result['payload']
-            errors = result['errors']
-        
-            if len(errors):
-                return JsonResponse({ "payload": None, "errors" : errors })
+            result = model.get_one(id=int(id))
 
             if camel:
-                payload = camel_keys(payload)
+                result= camel_keys(result)
 
-            return JsonResponse({ "payload" : payload, "errors": [] })
+            return JsonResponse(result)
         except Exception as e:
             return JsonResponse({ "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
 

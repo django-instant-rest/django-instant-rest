@@ -1,5 +1,5 @@
 OBJECT_WITH_ID_DOES_NOT_EXIST = lambda id : {
-    'unique_name': 'OBJECT_WITH_ID_DOES_NOT_EXIST ',
+    'unique_name': 'OBJECT_WITH_ID_DOES_NOT_EXIST',
     'message': f'Object with ID "{id}" does not exist',
     'is_internal': False,
 }
@@ -11,19 +11,19 @@ DATABASE_CONSTRAINTS_VIOLATED = {
 }
 
 INVALID_BEFORE_PARAMETER = {
-    'unique_name': 'INVALID_BEFORE_PARAMETER ',
+    'unique_name': 'INVALID_BEFORE_PARAMETER',
     'message': "Expected parameter 'before' to be a base64 encoded string",
     'is_internal': False,
 }
 
 INVALID_AFTER_PARAMETER = {
-    'unique_name': 'INVALID_AFTER_PARAMETER ',
+    'unique_name': 'INVALID_AFTER_PARAMETER',
     'message': "Expected parameter 'after' to be a base64 encoded string",
     'is_internal': False,
 }
 
 INVALID_DATE_RECIEVED = lambda field_name : {
-    'unique_name': 'INVALID_DATE_RECIEVED ',
+    'unique_name': 'INVALID_DATE_RECIEVED',
     'message': f'Received an invalid date for field "{field}"',
     'is_internal': False,
 }
@@ -58,7 +58,7 @@ DELETE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('DELETE_ONE_', 'delete an e
 
 
 PAGINATION_FAILED_UNEXPECTEDLY = {
-    'unique_name': 'PAGINATION_FAILED_UNEXPECTEDLY ',
+    'unique_name': 'PAGINATION_FAILED_UNEXPECTEDLY',
     'message': 'Failed unexpectedly while trying to paginate a list of objects',
     'is_internal': True,
 }
@@ -70,7 +70,7 @@ PAGINATION_DIRECTION_UNCLEAR = {
 }
 
 PAGINATION_CURSOR_INVALID = {
-    'unique_name': 'PAGINATION_CURSOR_INVALID ',
+    'unique_name': 'PAGINATION_CURSOR_INVALID',
     'message': 'Expected `first` or `last` to be a base-64 encoded string.',
     'is_internal': False,
 }

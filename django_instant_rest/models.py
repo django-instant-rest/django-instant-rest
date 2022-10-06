@@ -229,38 +229,22 @@ class RestResource(BaseModel):
 
     @classmethod
     def get_one(cls, **input):
-        """
-        Retrieve a single model instance as a dictionary,
-        respecting user defined hook functions that run before and
-        after data is retrieved.
-        """
-        try:
-            id = input.get('id', None)
-            output = None
+        """Retrieve a single model instance as a dictionary"""
 
-            # Applying pre-operation hooks
-            for hook_fn in cls.Hooks.before_get_one:
-                input, errors = hook_fn(**input)
+        def inner_fn(**input):
+            try:
+                id = input.get('id', None)
+                model_instance = cls.objects.get(id=id)
+                return { 'payload': model_instance.to_dict(), 'errors': [] }
 
-                if errors:
-                    output = { "payload": None, "errors": errors }
-                    return output
+            except cls.DoesNotExist:
+                return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
-            # Performing the actual data fetching
-            model_instance = cls.objects.get(id=id)
-            output = { 'payload': model_instance.to_dict(), 'errors': [] }
-
-            # Applying post-operation hooks
-            for hook_fn in cls.Hooks.after_get_one:
-                output = hook_fn(**output)
-
-            return output
-
-        except cls.DoesNotExist:
-            return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
-
-        except Exception as e:
-            return { "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY(HOOKS, e)] }
+            except Exception as e:
+                error = _FAILED_UNEXPECTEDLY('retrieving an object', region = REGION, exception = e)
+                return { "payload": None, "errors": [error] }
+        
+        return cls.with_hooks(inner_fn, 'get_one')(**input)
 
 
 

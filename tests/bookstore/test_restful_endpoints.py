@@ -48,6 +48,7 @@ class TestResourceModel(TestCase):
 
         body = deserialize(response.content)
         self.assertEqual(len(body['errors']), 1)
+        self.assertEqual(body['errors'][0]['unique_name'], 'OBJECT_WITH_ID_DOES_NOT_EXIST')
 
     def test_get_requests_return_model_instance_fields(self):
         response = self.client.get('/authors')
