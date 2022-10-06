@@ -9,10 +9,17 @@ import datetime
 import uuid
 import jwt
 
-HOOKS = 'HOOKS'
-STORAGE = 'STORAGE'
 
 REGION = 'MODEL_STORAGE'
+
+def default_get_many_args(kwargs = {}):
+    input = kwargs
+    input['filters'] = input.get('filters', {})
+    input['order_by'] = input.get('order_by', [])
+    input['pseudo_fields'] = input.get('pseudo_fields', [])
+    input['fields'] = input.get('fields', [])
+    return input
+
 
 class BaseModel(models.Model):
     '''A generic model with commonly used methods'''
@@ -50,6 +57,21 @@ class BaseModel(models.Model):
 
         return result
 
+
+    @classmethod
+    def _unpack_validation_error(cls, e):
+        errors = []
+        for field_name, messages in e:
+            for message in messages:
+                errors.append({
+                    "message": message,
+                    "unique_name": f"INVALID_FIELD:{field_name}",
+                    "is_internal": False,
+                })
+
+        return errors
+
+
 class RestResource(BaseModel):
     '''Represents a data type that is exposed by a REST API'''
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,6 +98,7 @@ class RestResource(BaseModel):
         after_get_many = []
         after_get_one = []
         after_update_one = []
+
 
     @classmethod
     def with_hooks(cls, fn, fn_name):
@@ -179,8 +202,6 @@ class RestResource(BaseModel):
 
 
 
-
-
     @classmethod
     def create_one(cls, **input):
         '''Tries to store a new model instance'''
@@ -212,20 +233,6 @@ class RestResource(BaseModel):
         
         return cls.with_hooks(inner_fn, 'create_one')(**input)
 
-
-    @classmethod
-    def _unpack_validation_error(cls, e):
-        errors = []
-        for field_name, messages in e:
-            for message in messages:
-                errors.append({
-                    "message": message,
-                    "unique_name": f"INVALID_FIELD:{field_name}",
-                    "is_internal": False,
-                })
-
-        return errors
-        
 
     @classmethod
     def get_one(cls, **input):
@@ -322,9 +329,7 @@ class RestResource(BaseModel):
                 error = _FAILED_UNEXPECTEDLY('retrieving a list of objects', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
 
-        
         return cls.with_hooks(inner_fn, 'get_many')(**input)
-
 
 
             
@@ -360,10 +365,4 @@ class RestClient(BaseModel):
         else:
             return None
 
-def default_get_many_args(kwargs = {}):
-    input = kwargs
-    input['filters'] = input.get('filters', {})
-    input['order_by'] = input.get('order_by', [])
-    input['pseudo_fields'] = input.get('pseudo_fields', [])
-    input['fields'] = input.get('fields', [])
-    return input
+
