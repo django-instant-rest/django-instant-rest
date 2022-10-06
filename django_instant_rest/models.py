@@ -127,7 +127,7 @@ class RestResource(BaseModel):
                 return output 
 
             except Exception as e:
-                error = _FAILED_UNEXPECTEDLY('applying hooks', region = REGION, exception = e)
+                error = FAILED_UNEXPECTEDLY('applying hooks', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
         
         return wrapper
@@ -150,7 +150,7 @@ class RestResource(BaseModel):
                 return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
             except Exception as e:
-                error = _FAILED_UNEXPECTEDLY('deleting an object', region = REGION, exception = e)
+                error = FAILED_UNEXPECTEDLY('deleting an object', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
         
         return cls.with_hooks(inner_fn, 'delete_one')(**input)
@@ -195,7 +195,7 @@ class RestResource(BaseModel):
                 return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
             except Exception as e:
-                    error = _FAILED_UNEXPECTEDLY('updating an object', region = REGION, exception = e)
+                    error = FAILED_UNEXPECTEDLY('updating an object', region = REGION, exception = e)
                     return { "payload": None, "errors": [error] }
         
         return cls.with_hooks(inner_fn, 'update_one')(**input)
@@ -228,7 +228,7 @@ class RestResource(BaseModel):
                 return { "payload": None, "errors": errors }
 
             except Exception as e:
-                error = _FAILED_UNEXPECTEDLY('storing new object', region = REGION, exception = e)
+                error = FAILED_UNEXPECTEDLY('storing new object', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
         
         return cls.with_hooks(inner_fn, 'create_one')(**input)
@@ -248,7 +248,7 @@ class RestResource(BaseModel):
                 return { "payload": None, "errors": [OBJECT_WITH_ID_DOES_NOT_EXIST(id)] }
 
             except Exception as e:
-                error = _FAILED_UNEXPECTEDLY('retrieving an object', region = REGION, exception = e)
+                error = FAILED_UNEXPECTEDLY('retrieving an object', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
         
         return cls.with_hooks(inner_fn, 'get_one')(**input)
@@ -326,7 +326,7 @@ class RestResource(BaseModel):
                     if after:
                         return { 'payload': None, "errors": [INVALID_AFTER_PARAMETER] }
 
-                error = _FAILED_UNEXPECTEDLY('retrieving a list of objects', region = REGION, exception = e)
+                error = FAILED_UNEXPECTEDLY('retrieving a list of objects', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
 
         return cls.with_hooks(inner_fn, 'get_many')(**input)

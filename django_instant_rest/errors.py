@@ -29,32 +29,14 @@ INVALID_DATE_RECIEVED = lambda field_name : {
 }
 
 
-def FAILED_UNEXPECTEDLY(prefix = '', action = 'perform an unspecified task'):
-    def handler(region = 'unknown', exception = None):
-        print(f'Unexpected failure in region "{region}": {exception}')
-
-        return {
-            'unique_name': f"{prefix}FAILED_UNEXPECTEDLY",
-            'message': 'Failed unexpectedly while attempting to {action}.',
-            'is_internal': True,
-        }
-    return handler
-
-def _FAILED_UNEXPECTEDLY( action = 'performing an unspecified task', region = 'UNSPECIFIED', exception = None):
+def FAILED_UNEXPECTEDLY( action = 'performing an unspecified task', region = 'UNSPECIFIED', exception = None):
     return {
-        'unique_name': f"FAILED_UNEXPECTEDLY",
-        'message': 'Failed unexpectedly while {action}.',
+        'unique_name': "FAILED_UNEXPECTEDLY",
+        'message': f"Failed unexpectedly while {action}.",
         'is_internal': True,
         '_exception': str(exception),
         '_region': region,
     }
-
-
-GET_MANY_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_MANY_', 'retrieve a list of object')
-GET_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('GET_ONE_', 'retrieve a single object')
-CREATE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('CREATE_ONE_', 'store a new object')
-UPDATE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('UPDATE_ONE_', 'update an existing object')
-DELETE_ONE_FAILED_UNEXPECTEDLY = FAILED_UNEXPECTEDLY('DELETE_ONE_', 'delete an existing object')
 
 
 PAGINATION_FAILED_UNEXPECTEDLY = {

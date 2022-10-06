@@ -36,6 +36,7 @@ incorrect_credentials_err = { "message" : "incorrect username/password combinati
 
 
 REGION = 'REQUEST_HANDLING'
+ACTION = 'interpreting HTTP requests'
 
 def format_validation_error(e: ValidationError, camel=False):
     errors = []
@@ -117,7 +118,8 @@ def read_many(model, camel = False):
             return JsonResponse({ 'payload': payload, 'errors': errors })
         
         except Exception as e:
-            return JsonResponse({ 'payload': None, 'errors': [GET_MANY_FAILED_UNEXPECTEDLY(REGION, e)] })
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return { "payload": None, "errors": [error] }
 
     
     return request_handler
@@ -132,8 +134,10 @@ def read_one(model, camel=False):
                 result= camel_keys(result)
 
             return JsonResponse(result)
+
         except Exception as e:
-            return JsonResponse({ "payload": None, "errors": [GET_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return { "payload": None, "errors": [error] }
 
     return request_handler
 
@@ -179,7 +183,8 @@ def create_one(model, camel=False):
 
         # Handling all other errors generically
         except Exception as e:
-            return JsonResponse({ "payload": None, "errors": [CREATE_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return JsonResponse({ "payload": None, "errors": [error] })
 
     return request_handler
 
@@ -199,7 +204,8 @@ def update_one(model, camel=False):
         try:
             return JsonResponse(model.update_one(**input))
         except Exception as e:
-            return JsonResponse({ "payload": None, "errors": [UPDATE_ONE_FAILED_UNEXPECTEDLY(REGION, e)] })
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return JsonResponse({ "payload": None, "errors": [error] })
 
 
 
