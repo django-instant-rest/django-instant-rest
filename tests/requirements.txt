@@ -1,2 +1,4 @@
 ./
 Django==4.0.2
+ariadne==0.16.1
+ariadne_django==0.3.0
