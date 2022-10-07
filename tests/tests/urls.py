@@ -22,8 +22,7 @@ type_defs = gql("""
 """)
 
 def list_books(*_):
-    return 
-    [{ "title": book.title } for book in Book.objects.all()]
+    return [{ "title": book.title } for book in Book.objects.all()]
 
 def create_book(*_, title):
     book = Book.objects.create(titie=title)
