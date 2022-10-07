@@ -4,7 +4,39 @@ from django_instant_rest import patterns
 from ariadne import gql, QueryType, MutationType, make_executable_schema
 from ariadne_django.views import GraphQLView
 from django.urls import path
+from inspect import cleandoc
+from textwrap import dedent
 
+
+def gql_primitive(field):
+    field_type = type(field)
+    if field_type == models.BigAutoField:
+        return 'Int'
+    elif field_type == models.ForeignKey:
+        return 'Int'
+    elif field_type == models.DateTimeField:
+        return 'String'
+    elif field_type == models.CharField:
+        return 'String'
+
+    return 'String'
+
+
+def model_as_gql_type_def(model):
+    gql_fields = [f"{f.name}: {gql_primitive(f)}" for f in model._meta.fields]
+    newline = "\n    "
+
+    return (f"type {model.__name__} {{\n" 
+        f"    {newline.join(gql_fields)}\n"
+        "}\n"
+    )
+
+
+
+
+included_models = [Book, Author]
+gql_model_types = "\n".join([model_as_gql_type_def(m) for m in included_models])
+print(gql_model_types)
 
 
 type_defs = gql("""
