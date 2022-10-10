@@ -4,8 +4,6 @@ from django_instant_rest import patterns
 from ariadne import gql, QueryType, MutationType, make_executable_schema
 from ariadne_django.views import GraphQLView
 from django.urls import path
-from inspect import cleandoc
-from textwrap import dedent
 
 
 def gql_primitive(field):
@@ -33,7 +31,7 @@ class GraphQLField():
 
 class GraphQLBackwardsRel():
     def __init__(self, set):
-        self.name = set.rel.name
+        self.name = set.rel.related_name if set.rel.related_name else set.rel.name
         self.typename = backwards_rel_type(set)
 
 
@@ -42,7 +40,13 @@ class GraphQLModel():
         self.name = model.__name__
         self.fields = [GraphQLField(f) for f in model._meta.fields]
 
-        backwards_rel_attrs = list(filter(lambda p: p.endswith('set'), dir(model)))
+        def is_rel(property_name):
+            set = getattr(model, property_name, None)
+            if not set:
+                return False
+            return bool(getattr(set, 'rel', None))
+
+        backwards_rel_attrs = list(filter(lambda p: is_rel(p), dir(model)))
         backwards_rel_sets = [getattr(model, attr) for attr in backwards_rel_attrs]
         self.fields += [GraphQLBackwardsRel(set) for set in backwards_rel_sets]
 

@@ -21,7 +21,7 @@ class StoreLocation(RestResource):
     country = models.CharField(max_length=255)
 
 class BookInventory(RestResource):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="inventory")
     location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE)
     quantity: models.PositiveIntegerField()
 
