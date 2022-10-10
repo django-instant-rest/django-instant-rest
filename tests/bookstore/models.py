@@ -22,7 +22,7 @@ class StoreLocation(RestResource):
 
 class BookInventory(RestResource):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="inventory")
-    location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE, related_name="inventory")
     quantity: models.PositiveIntegerField()
 
 class Employee(RestResource):

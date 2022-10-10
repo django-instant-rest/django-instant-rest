@@ -13,7 +13,7 @@ def gql_primitive(field):
     elif field_type == models.ForeignKey:
         return field.related_model.__name__
     elif field_type == models.DateTimeField:
-        return 'String'
+        return 'DateTime'
     elif field_type == models.CharField:
         return 'String'
 
@@ -61,7 +61,7 @@ class GraphQLModel():
         )
 
 
-included_models = [Book, Author]
+included_models = [Book, BookInventory, Author, StoreLocation, Employee]
 gql_models = map(lambda m: GraphQLModel(m), included_models)
 print("\n".join([ m.stringify() for m in gql_models ]))
 
