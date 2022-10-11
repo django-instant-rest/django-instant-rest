@@ -53,6 +53,7 @@ class GraphQLModel():
     def __init__(self, model):
         self.name = model.__name__
         self.fields = [GraphQLField(f) for f in model._meta.fields]
+        self.model = model
 
         def is_rel(property_name):
             set = getattr(model, property_name, None)
@@ -84,11 +85,29 @@ class GraphQLModel():
             )
         ]
 
+    def query_resolvers(self):
+        def get_one(obj, info, id = None):
+            result = self.model.get_one(id=id)
+            return result['payload']
+
+        get_one_field = lower(casing.camel(self.name))
+
+        return {
+            get_one_field: get_one,
+        }
+
+    def mutation_resolvers(self):
+        return {}
 
 
+def make_type_defs(gql_models):
+    # adding base types
+    type_def = (
+        "scalar DateTime\n"
+        "\n"
+    )
 
-def type_defs(gql_models):
-    type_def = "\n".join([ m.stringify_type_def() for m in gql_models ]) + "\n"
+    type_def += "\n".join([ m.stringify_type_def() for m in gql_models ]) + "\n"
     indented_nl = "\n    "
 
     # Queries types
@@ -106,41 +125,34 @@ def type_defs(gql_models):
 
 included_models = [Book, BookInventory, Author, StoreLocation, Employee]
 gql_models = list(map(lambda m: GraphQLModel(m), included_models))
-print(type_defs(gql_models))
+type_defs = make_type_defs(gql_models)
+type_def_string = gql(type_defs)
 
 
-# type_defs = gql("""
-#     type Query {
-#         books: [Book!]!
-#     }
 
-#     type Mutation {
-#         createBook: Book!
-#     }
+def list_books(*_):
+    return [{ "title": book.title } for book in Book.objects.all()]
 
-#     type Book {
-#         title: String!
-#     }
-# """)
+def create_book(*_, title):
+    book = Book.objects.create(titie=title)
+    return {"title": book.title}
 
-# def list_books(*_):
-#     return [{ "title": book.title } for book in Book.objects.all()]
 
-# def create_book(*_, title):
-#     book = Book.objects.create(titie=title)
-#     return {"title": book.title}
+query = QueryType()
+mutation = MutationType()
 
-# query = QueryType()
-# query.set_field("books", list_books)
+for m in gql_models:
+    for field_name, resolver in m.query_resolvers().items():
+        query.set_field(field_name, resolver)
 
-# mutation = MutationType()
-# mutation.set_field("createBook", create_book)
+    for field_name, resolver in m.mutation_resolvers().items():
+        mutation.set_field(field_name, resolver)
 
-# schema = make_executable_schema(type_defs, query, mutation)
+schema = make_executable_schema(type_defs, query)
 
 
 urlpatterns = [
-    # path("graphql/", GraphQLView.as_view(schema=schema)),
+    path("graphql/", GraphQLView.as_view(schema=schema)),
     patterns.resource('authors', Author),
     patterns.resource('books', Book),
     patterns.client('customers', Customer),
