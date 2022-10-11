@@ -1,10 +1,12 @@
 
 from bookstore.models import *
-from django_instant_rest import patterns
+from django_instant_rest import patterns, casing
 from ariadne import gql, QueryType, MutationType, make_executable_schema
 from ariadne_django.views import GraphQLView
 from django.urls import path
 
+def lower(string):
+    return string[0].lower() + string[1:]
 
 def gql_primitive(field):
     field_type = type(field)
@@ -51,63 +53,73 @@ class GraphQLModel():
         self.fields += [GraphQLBackwardsRel(set) for set in backwards_rel_sets]
 
 
-    def stringify(self):
+    def stringify_type_def(self):
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
         newline = "\n    "
 
-        return (f"type {self.name} {{\n" 
+        type_def = (f"type {self.name} {{\n" 
             f"    {newline.join(gql_fields)}\n"
             "}\n"
         )
 
+        return type_def
+
+
+    def stringify_query_defs(self):
+        return f"{lower(casing.camel(self.name))}: [{self.name}]"
+
+
+def type_defs(gql_models):
+    type_def = "\n".join([ m.stringify_type_def() for m in gql_models ])
+    indented_nl = "\n    "
+
+    # Queries types
+    query_properties = [ m.stringify_query_defs() for m in gql_models ]
+    type_def += ("type Query {\n" 
+        f"    {indented_nl.join(query_properties)}\n"
+        "}\n"
+    )
+
+    return type_def
+
 
 included_models = [Book, BookInventory, Author, StoreLocation, Employee]
-gql_models = map(lambda m: GraphQLModel(m), included_models)
-print("\n".join([ m.stringify() for m in gql_models ]))
+gql_models = list(map(lambda m: GraphQLModel(m), included_models))
+print(type_defs(gql_models))
 
-# print(dir(Author.book_set.rel))
-# print(Author.book_set.rel.name)
-# print(Author.book_set.rel.related_model.__name__)
-# print(Author.book_set.rel.many_to_many)
-# print(Author.book_set.rel.many_to_one)
-# print(Author.book_set.rel.one_to_one)
-# print(Author.book_set.rel.one_to_many)
-# print(Author.book_set.rel.multiple)
 
-# print(dir(Author))
+# type_defs = gql("""
+#     type Query {
+#         books: [Book!]!
+#     }
 
-type_defs = gql("""
-    type Query {
-        books: [Book!]!
-    }
+#     type Mutation {
+#         createBook: Book!
+#     }
 
-    type Mutation {
-        createBook: Book!
-    }
+#     type Book {
+#         title: String!
+#     }
+# """)
 
-    type Book {
-        title: String!
-    }
-""")
+# def list_books(*_):
+#     return [{ "title": book.title } for book in Book.objects.all()]
 
-def list_books(*_):
-    return [{ "title": book.title } for book in Book.objects.all()]
+# def create_book(*_, title):
+#     book = Book.objects.create(titie=title)
+#     return {"title": book.title}
 
-def create_book(*_, title):
-    book = Book.objects.create(titie=title)
-    return {"title": book.title}
+# query = QueryType()
+# query.set_field("books", list_books)
 
-query = QueryType()
-query.set_field("books", list_books)
+# mutation = MutationType()
+# mutation.set_field("createBook", create_book)
 
-mutation = MutationType()
-mutation.set_field("createBook", create_book)
-
-schema = make_executable_schema(type_defs, query, mutation)
+# schema = make_executable_schema(type_defs, query, mutation)
 
 
 urlpatterns = [
-    path("graphql/", GraphQLView.as_view(schema=schema)),
+    # path("graphql/", GraphQLView.as_view(schema=schema)),
     patterns.resource('authors', Author),
     patterns.resource('books', Book),
     patterns.client('customers', Customer),
