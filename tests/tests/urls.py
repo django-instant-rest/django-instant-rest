@@ -48,6 +48,20 @@ class GraphQLQueryType():
         return f"{self.name}({args}): {self.output}"
 
 
+class GraphQLInputType():
+    def __init__(self, name = "", fields = []):
+        self.name = name
+        self.fields = fields
+
+    def stringify(self):
+        gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
+        newline = "\n    "
+
+        return (f"type {self.name} {{\n" 
+            f"    {newline.join(gql_fields)}\n"
+            "}\n"
+        )
+
 
 class GraphQLModel():
     def __init__(self, model):
@@ -85,6 +99,19 @@ class GraphQLModel():
             )
         ]
 
+
+    def input_type(self):
+        name = f"{self.name}Insertion"
+
+        fields = []
+
+        for f in self.fields:
+            if f.name not in ['id', 'created_at', 'updated_at']:
+                fields.append(f)
+
+        return GraphQLInputType(name=name, fields=fields)
+
+
     def query_resolvers(self):
         def get_one(obj, info, id = None):
             result = self.model.get_one(id=id)
@@ -107,8 +134,12 @@ def make_type_defs(gql_models):
         "\n"
     )
 
+    # Model Types
     type_def += "\n".join([ m.stringify_type_def() for m in gql_models ]) + "\n"
     indented_nl = "\n    "
+
+    # Input Types
+    type_def += "\n".join([ m.input_type().stringify() for m in gql_models ]) + "\n"
 
     # Queries types
     query_types = []
