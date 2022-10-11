@@ -8,12 +8,13 @@ from django.urls import path
 def lower(string):
     return string[0].lower() + string[1:]
 
-def gql_primitive(field):
+def gql_primitive(field, is_insertion = False):
     field_type = type(field)
     if field_type == models.BigAutoField:
         return 'ID'
     elif field_type == models.ForeignKey:
-        return field.related_model.__name__
+        name = field.related_model.__name__
+        return name if not is_insertion else name + 'Insertion'
     elif field_type == models.DateTimeField:
         return 'DateTime'
     elif field_type == models.CharField:
@@ -27,9 +28,13 @@ def backwards_rel_type(set):
 
 
 class GraphQLField():
-    def __init__(self, field):
+    def __init__(self, field, is_insertion = False):
         self.name = field.name
-        self.typename = gql_primitive(field)
+        self.typename = gql_primitive(field, is_insertion)
+        self.field = field
+    
+    def as_insertion(self):
+        return GraphQLField(self.field, True)
 
 class GraphQLBackwardsRel():
     def __init__(self, set):
@@ -57,7 +62,7 @@ class GraphQLInputType():
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
         newline = "\n    "
 
-        return (f"type {self.name} {{\n" 
+        return (f"input {self.name} {{\n" 
             f"    {newline.join(gql_fields)}\n"
             "}\n"
         )
@@ -77,15 +82,17 @@ class GraphQLModel():
 
         backwards_rel_attrs = list(filter(lambda p: is_rel(p), dir(model)))
         backwards_rel_sets = [getattr(model, attr) for attr in backwards_rel_attrs]
-        self.fields += [GraphQLBackwardsRel(set) for set in backwards_rel_sets]
+        self.rels = [GraphQLBackwardsRel(set) for set in backwards_rel_sets]
 
 
     def stringify_type_def(self):
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
+        gql_rel_fields = [f"{f.name}: {f.typename}" for f in self.rels]
         newline = "\n    "
 
         return (f"type {self.name} {{\n" 
             f"    {newline.join(gql_fields)}\n"
+            f"    {newline.join(gql_rel_fields)}\n"
             "}\n"
         )
 
@@ -99,6 +106,15 @@ class GraphQLModel():
             )
         ]
 
+    def mutation_types(self):
+        return [
+            GraphQLQueryType(
+                name = "create" + casing.camel(self.name),
+                args = { 'input': self.input_type().name },
+                output = self.name,
+            )
+        ]
+
 
     def input_type(self):
         name = f"{self.name}Insertion"
@@ -107,7 +123,7 @@ class GraphQLModel():
 
         for f in self.fields:
             if f.name not in ['id', 'created_at', 'updated_at']:
-                fields.append(f)
+                fields.append(f.as_insertion())
 
         return GraphQLInputType(name=name, fields=fields)
 
@@ -124,7 +140,15 @@ class GraphQLModel():
         }
 
     def mutation_resolvers(self):
-        return {}
+        def create_one(obj, info, input):
+            result = self.model.create_one(**input)
+            return result['payload']
+
+        create_one_field = "create" + casing.camel(self.name)
+
+        return {
+            create_one_field: create_one,
+        }
 
 
 def make_type_defs(gql_models):
@@ -151,6 +175,16 @@ def make_type_defs(gql_models):
         "}\n"
     )
 
+    # Mutation types
+    mutation_types = []
+    for m in gql_models:
+        mutation_types += [qt.stringify() for qt in m.mutation_types()]
+
+    type_def += ("type Mutation {\n" 
+        f"    {indented_nl.join(mutation_types)}\n"
+        "}\n"
+    )
+
     return type_def
 
 
@@ -159,6 +193,7 @@ gql_models = list(map(lambda m: GraphQLModel(m), included_models))
 type_defs = make_type_defs(gql_models)
 type_def_string = gql(type_defs)
 
+print(type_def_string)
 
 
 def list_books(*_):
@@ -179,7 +214,7 @@ for m in gql_models:
     for field_name, resolver in m.mutation_resolvers().items():
         mutation.set_field(field_name, resolver)
 
-schema = make_executable_schema(type_defs, query)
+schema = make_executable_schema(type_defs, query, mutation)
 
 
 urlpatterns = [
