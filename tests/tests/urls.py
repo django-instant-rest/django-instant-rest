@@ -37,6 +37,18 @@ class GraphQLBackwardsRel():
         self.typename = backwards_rel_type(set)
 
 
+class GraphQLQueryType():
+    def __init__(self, name = "", args = {}, output = ""):
+        self.name = name
+        self.args = args
+        self.output = output
+
+    def stringify(self):
+        args = ", ".join([f"{k}: {v}" for k,v in self.args.items()])
+        return f"{self.name}({args}): {self.output}"
+
+
+
 class GraphQLModel():
     def __init__(self, model):
         self.name = model.__name__
@@ -57,26 +69,35 @@ class GraphQLModel():
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
         newline = "\n    "
 
-        type_def = (f"type {self.name} {{\n" 
+        return (f"type {self.name} {{\n" 
             f"    {newline.join(gql_fields)}\n"
             "}\n"
         )
 
-        return type_def
+
+    def query_types(self):
+        return [
+            GraphQLQueryType(
+                name = lower(casing.camel(self.name)),
+                args = { 'id': 'ID' },
+                output = self.name,
+            )
+        ]
 
 
-    def stringify_query_defs(self):
-        return f"{lower(casing.camel(self.name))}: [{self.name}]"
 
 
 def type_defs(gql_models):
-    type_def = "\n".join([ m.stringify_type_def() for m in gql_models ])
+    type_def = "\n".join([ m.stringify_type_def() for m in gql_models ]) + "\n"
     indented_nl = "\n    "
 
     # Queries types
-    query_properties = [ m.stringify_query_defs() for m in gql_models ]
+    query_types = []
+    for m in gql_models:
+        query_types += [qt.stringify() for qt in m.query_types()]
+
     type_def += ("type Query {\n" 
-        f"    {indented_nl.join(query_properties)}\n"
+        f"    {indented_nl.join(query_types)}\n"
         "}\n"
     )
 
