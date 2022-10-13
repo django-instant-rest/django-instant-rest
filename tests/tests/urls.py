@@ -13,8 +13,7 @@ def gql_primitive(field, is_insertion = False):
     if field_type == models.BigAutoField:
         return 'ID'
     elif field_type == models.ForeignKey:
-        name = field.related_model.__name__
-        return name if not is_insertion else name + 'Insertion'
+        return 'ID' if is_insertion else field.related_model.__name__
     elif field_type == models.DateTimeField:
         return 'DateTime'
     elif field_type == models.CharField:
@@ -56,7 +55,13 @@ class GraphQLQueryType():
 class GraphQLInputType():
     def __init__(self, name = "", fields = []):
         self.name = name
+
+        for field in fields:
+            if name == 'BookInsertion':
+                print('INPUT', name, field.name, field.typename, type(field.field))
+
         self.fields = fields
+
 
     def stringify(self):
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
@@ -99,19 +104,21 @@ class GraphQLModel():
 
     def query_types(self):
         return [
+            # Get One
             GraphQLQueryType(
                 name = lower(casing.camel(self.name)),
                 args = { 'id': 'ID' },
-                output = self.name,
+                output = f"Single{self.name}Result"
             )
         ]
 
     def mutation_types(self):
         return [
+            # Create One
             GraphQLQueryType(
                 name = "create" + casing.camel(self.name),
                 args = { 'input': self.input_type().name },
-                output = self.name,
+                output = f"Single{self.name}Result"
             )
         ]
 
@@ -130,8 +137,7 @@ class GraphQLModel():
 
     def query_resolvers(self):
         def get_one(obj, info, id = None):
-            result = self.model.get_one(id=id)
-            return result['payload']
+            return self.model.get_one(id=id)
 
         get_one_field = lower(casing.camel(self.name))
 
@@ -141,8 +147,7 @@ class GraphQLModel():
 
     def mutation_resolvers(self):
         def create_one(obj, info, input):
-            result = self.model.create_one(**input)
-            return result['payload']
+            return self.model.create_one(**input)
 
         create_one_field = "create" + casing.camel(self.name)
 
@@ -154,8 +159,14 @@ class GraphQLModel():
 def make_type_defs(gql_models):
     # adding base types
     type_def = (
-        "scalar DateTime\n"
-        "\n"
+        "scalar DateTime\n\n"
+        "type Error {\n"
+        "    unique_name: String\n"
+        "    message: String\n"
+        "    is_internal: Boolean\n"
+        "    _exception: String\n"
+        "    _region: String\n"
+        "}\n\n"
     )
 
     # Model Types
@@ -169,6 +180,17 @@ def make_type_defs(gql_models):
     query_types = []
     for m in gql_models:
         query_types += [qt.stringify() for qt in m.query_types()]
+
+    
+    for m in gql_models:
+
+        # Payload Types
+        type_def += (
+            f"type Single{m.name}Result {{\n"
+            f"    payload: {m.name}\n"
+            f"    errors: [Error]\n"
+            "}\n\n"
+        )
 
     type_def += ("type Query {\n" 
         f"    {indented_nl.join(query_types)}\n"

@@ -4,6 +4,7 @@ from .errors import *
 from argon2 import PasswordHasher
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 from django.db import OperationalError
 import datetime
 import uuid
