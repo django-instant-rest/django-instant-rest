@@ -10,3 +10,7 @@
 - Support GraphQL
 - Rename `RestResource` to `APIResource`
 - Remove `RestClient` class.
+- Support GraphQL Rate Limiting
+- Support GraphQL Subscriptions
+- Perhaps hide Django boilerplate
+- Document Unsupported [Fields](https://docs.djangoproject.com/en/4.1/ref/models/fields/)

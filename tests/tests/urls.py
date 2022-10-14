@@ -129,6 +129,12 @@ class GraphQLModel():
                 name = lower(casing.camel(self.name)),
                 args = { 'id': 'ID' },
                 output = f"Single{self.name}Result"
+            ),
+            # Get Many
+            GraphQLQueryType(
+                name = f"{lower(casing.camel(self.name))}List",
+                args = { 'filters': f'{self.name}SearchFilters' },
+                output = f"{self.name}SearchResults"
             )
         ]
 
@@ -156,7 +162,7 @@ class GraphQLModel():
 
 
     def search_type(self):
-        name = f"{self.name}SearchCriteria"
+        name = f"{self.name}SearchFilters"
 
         fields = []
 
@@ -185,10 +191,6 @@ class GraphQLModel():
 
             if field_type == models.BigAutoField:
                 fields.append(GraphQLInputField(f.name, 'ID'))
-                # fields.append(GraphQLInputField(f'{f.name}_gt', 'ID'))
-                # fields.append(GraphQLInputField(f'{f.name}_lt', 'ID'))
-                # fields.append(GraphQLInputField(f'{f.name}_gte', 'ID'))
-                # fields.append(GraphQLInputField(f'{f.name}_lte', 'ID'))
 
             elif field_type == models.BooleanField:
                 fields.append(GraphQLInputField(f.name, 'Boolean'))
@@ -202,25 +204,23 @@ class GraphQLModel():
 
             elif field_type in string_fields:
                 fields.append(GraphQLInputField(f'{f.name}', 'String'))
-                fields.append(GraphQLInputField(f'{f.name}_starts_with', 'String'))
-                fields.append(GraphQLInputField(f'{f.name}_ends_with', 'String'))
-                fields.append(GraphQLInputField(f'{f.name}_contains', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__starts_with', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__ends_with', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__contains', 'String'))
 
             elif field_type in int_fields:
                 fields.append(GraphQLInputField(f.name, 'Int'))
-                fields.append(GraphQLInputField(f'{f.name}_gt', 'Int'))
-                fields.append(GraphQLInputField(f'{f.name}_lt', 'Int'))
-                fields.append(GraphQLInputField(f'{f.name}_gte', 'Int'))
-                fields.append(GraphQLInputField(f'{f.name}_lte', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}__gt', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}__lt', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}__gte', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}__lte', 'Int'))
 
             elif field_type in float_fields:
                 fields.append(GraphQLInputField(f.name, 'Float'))
-                fields.append(GraphQLInputField(f'{f.name}_gt', 'Float'))
-                fields.append(GraphQLInputField(f'{f.name}_lt', 'Float'))
-                fields.append(GraphQLInputField(f'{f.name}_gte', 'Float'))
-                fields.append(GraphQLInputField(f'{f.name}_lte', 'Float'))
-
-
+                fields.append(GraphQLInputField(f'{f.name}__gt', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}__lt', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}__gte', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}__lte', 'Float'))
 
         return GraphQLInputType(name=name, fields=fields)
 
@@ -231,8 +231,14 @@ class GraphQLModel():
 
         get_one_field = lower(casing.camel(self.name))
 
+        def get_many(obj, info, filters):
+            return self.model.get_many(filters=filters)
+
+        get_many_field = f"{lower(casing.camel(self.name))}List"
+
         return {
             get_one_field: get_one,
+            get_many_field: get_many,
         }
 
     def mutation_resolvers(self):
@@ -280,6 +286,23 @@ def make_type_defs(gql_models):
             f"type Single{m.name}Result {{\n"
             f"    payload: {m.name}\n"
             f"    errors: [Error]\n"
+            "}\n\n"
+        )
+
+        type_def += (
+            f"type {m.name}SearchResults {{\n"
+            f"    payload: Paginated{m.name}List \n"
+            f"    errors: [Error]\n"
+            "}\n\n"
+        )
+        
+        type_def += (
+            f"type Paginated{m.name}List{{\n"
+            f"    first_cursor: String\n"
+            f"    last_cursor: String\n"
+            f"    has_prev_page: Boolean\n"
+            f"    has_next_page: Boolean\n"
+            f"    nodes: [{m.name}]\n"
             "}\n\n"
         )
 
