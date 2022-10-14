@@ -1,7 +1,7 @@
 
 from bookstore.models import *
 from django_instant_rest import patterns, casing
-from ariadne import gql, QueryType, MutationType, make_executable_schema
+from ariadne import gql, QueryType, MutationType, ObjectType, make_executable_schema
 from ariadne_django.views import GraphQLView
 from django.urls import path
 
@@ -55,11 +55,6 @@ class GraphQLQueryType():
 class GraphQLInputType():
     def __init__(self, name = "", fields = []):
         self.name = name
-
-        for field in fields:
-            if name == 'BookInsertion':
-                print('INPUT', name, field.name, field.typename, type(field.field))
-
         self.fields = fields
 
 
@@ -88,6 +83,24 @@ class GraphQLModel():
         backwards_rel_attrs = list(filter(lambda p: is_rel(p), dir(model)))
         backwards_rel_sets = [getattr(model, attr) for attr in backwards_rel_attrs]
         self.rels = [GraphQLBackwardsRel(set) for set in backwards_rel_sets]
+
+
+    def field_level_resolvers(self):
+        obj_type = ObjectType(self.name)
+
+        # Defining resolvers to populate relational fields
+        for field in self.fields:
+            if type(field.field) == models.ForeignKey:
+                relation = getattr(self.model, field.name)
+
+                def resolver(obj, info):
+                    id = obj.get(field.name, None)
+                    result = relation.field.related_model.get_one(id = id)
+                    return result['payload']
+
+                obj_type.set_field(field.name, resolver)
+
+        return obj_type
 
 
     def stringify_type_def(self):
@@ -215,19 +228,10 @@ gql_models = list(map(lambda m: GraphQLModel(m), included_models))
 type_defs = make_type_defs(gql_models)
 type_def_string = gql(type_defs)
 
-print(type_def_string)
-
-
-def list_books(*_):
-    return [{ "title": book.title } for book in Book.objects.all()]
-
-def create_book(*_, title):
-    book = Book.objects.create(titie=title)
-    return {"title": book.title}
-
 
 query = QueryType()
 mutation = MutationType()
+other_resolvers = []
 
 for m in gql_models:
     for field_name, resolver in m.query_resolvers().items():
@@ -236,7 +240,10 @@ for m in gql_models:
     for field_name, resolver in m.mutation_resolvers().items():
         mutation.set_field(field_name, resolver)
 
-schema = make_executable_schema(type_defs, query, mutation)
+    other_resolvers.append(m.field_level_resolvers())
+
+
+schema = make_executable_schema(type_defs, query, mutation, other_resolvers)
 
 
 urlpatterns = [
