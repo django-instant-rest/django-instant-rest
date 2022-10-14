@@ -15,18 +15,18 @@ class Book(RestResource):
     title = models.CharField(max_length=255)
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
 
-class StoreLocation(RestResource):
+class InventoryLocation(RestResource):
     street_address = models.CharField(max_length=255)
     state_or_province = models.CharField(max_length=255)
     country = models.CharField(max_length=255)
 
 class BookInventory(RestResource):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="inventory")
-    location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE, related_name="inventory")
+    location = models.ForeignKey(InventoryLocation, on_delete=models.CASCADE, related_name="inventory")
     quantity: models.PositiveIntegerField()
 
 class Employee(RestResource):
-    location = models.ForeignKey(StoreLocation, on_delete=models.CASCADE)
+    location = models.ForeignKey(InventoryLocation, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
 

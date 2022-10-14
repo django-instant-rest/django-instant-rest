@@ -34,6 +34,13 @@ class GraphQLField():
     
     def as_insertion(self):
         return GraphQLField(self.field, True)
+    
+
+class GraphQLInputField():
+    def __init__(self, name, typename):
+        self.name = name
+        self.typename = typename
+    
 
 class GraphQLBackwardsRel():
     def __init__(self, set):
@@ -148,6 +155,76 @@ class GraphQLModel():
         return GraphQLInputType(name=name, fields=fields)
 
 
+    def search_type(self):
+        name = f"{self.name}SearchCriteria"
+
+        fields = []
+
+        for f in self.fields:
+            field_type = type(f.field)
+
+            int_fields = [
+                models.IntegerField,
+                models.SmallIntegerField,
+                models.BigIntegerField,
+                models.PositiveIntegerField,
+                models.PositiveSmallIntegerField,
+                models.PositiveBigIntegerField,
+            ]
+
+            float_fields = [
+                models.FloatField,
+                models.DecimalField,
+            ]
+
+            string_fields = [
+                models.CharField,
+                models.TextField,
+                models.UUIDField,
+            ]
+
+            if field_type == models.BigAutoField:
+                fields.append(GraphQLInputField(f.name, 'ID'))
+                # fields.append(GraphQLInputField(f'{f.name}_gt', 'ID'))
+                # fields.append(GraphQLInputField(f'{f.name}_lt', 'ID'))
+                # fields.append(GraphQLInputField(f'{f.name}_gte', 'ID'))
+                # fields.append(GraphQLInputField(f'{f.name}_lte', 'ID'))
+
+            elif field_type == models.BooleanField:
+                fields.append(GraphQLInputField(f.name, 'Boolean'))
+
+            elif field_type == models.DateTimeField:
+                fields.append(GraphQLInputField(f.name, 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}_gt', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}_lt', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}_gte', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}_lte', 'DateTime'))
+
+            elif field_type in string_fields:
+                fields.append(GraphQLInputField(f'{f.name}', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}_starts_with', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}_ends_with', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}_contains', 'String'))
+
+            elif field_type in int_fields:
+                fields.append(GraphQLInputField(f.name, 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}_gt', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}_lt', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}_gte', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}_lte', 'Int'))
+
+            elif field_type in float_fields:
+                fields.append(GraphQLInputField(f.name, 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}_gt', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}_lt', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}_gte', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}_lte', 'Float'))
+
+
+
+        return GraphQLInputType(name=name, fields=fields)
+
+
     def query_resolvers(self):
         def get_one(obj, info, id = None):
             return self.model.get_one(id=id)
@@ -188,6 +265,7 @@ def make_type_defs(gql_models):
 
     # Input Types
     type_def += "\n".join([ m.input_type().stringify() for m in gql_models ]) + "\n"
+    type_def += "\n".join([ m.search_type().stringify() for m in gql_models ]) + "\n"
 
     # Queries types
     query_types = []
@@ -223,7 +301,7 @@ def make_type_defs(gql_models):
     return type_def
 
 
-included_models = [Book, BookInventory, Author, StoreLocation, Employee]
+included_models = [Book, BookInventory, Author, InventoryLocation, Employee]
 gql_models = list(map(lambda m: GraphQLModel(m), included_models))
 type_defs = make_type_defs(gql_models)
 type_def_string = gql(type_defs)
