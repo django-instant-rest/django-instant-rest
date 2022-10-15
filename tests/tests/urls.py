@@ -197,10 +197,10 @@ class GraphQLModel():
 
             elif field_type == models.DateTimeField:
                 fields.append(GraphQLInputField(f.name, 'DateTime'))
-                fields.append(GraphQLInputField(f'{f.name}_gt', 'DateTime'))
-                fields.append(GraphQLInputField(f'{f.name}_lt', 'DateTime'))
-                fields.append(GraphQLInputField(f'{f.name}_gte', 'DateTime'))
-                fields.append(GraphQLInputField(f'{f.name}_lte', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}__gt', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}__lt', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}__gte', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}__lte', 'DateTime'))
 
             elif field_type in string_fields:
                 fields.append(GraphQLInputField(f'{f.name}', 'String'))
