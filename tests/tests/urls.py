@@ -13,7 +13,7 @@ def gql_primitive(field, is_insertion = False):
     if field_type == models.BigAutoField:
         return 'ID'
     elif field_type == models.ForeignKey:
-        return 'ID' if is_insertion else field.related_model.__name__
+        return 'ID' if is_insertion else f"Single{field.related_model.__name__}Result"
     elif field_type == models.DateTimeField:
         return 'DateTime'
     elif field_type == models.CharField:
