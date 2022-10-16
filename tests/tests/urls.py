@@ -49,6 +49,7 @@ class GraphQLBackwardsRel():
     def __init__(self, set):
         self.name = set.rel.related_name if set.rel.related_name else set.rel.name
         self.typename = backwards_rel_type(set)
+        self.set = set
 
 
 class GraphQLQueryType():
@@ -98,8 +99,21 @@ class GraphQLModel():
     def field_level_resolvers(self):
         obj_type = ObjectType(self.name)
 
-        # Defining resolvers to populate relational fields
+        # TODO allow filtering and pagination on backwards relations
+        for rel in self.rels:
+            backward_field_name = rel.set.rel.field.name
+
+            def resolver(obj, info):
+                required_filters = { backward_field_name: obj.get('id') }
+                result = rel.set.rel.related_model.get_many(filters=required_filters)
+                return result['payload']['nodes']
+
+            obj_type.set_field(rel.name, resolver)
+
+
+        # Defining resolvers to populate owned relational fields
         for field in self.fields:
+
             if type(field.field) == models.ForeignKey:
                 relation = getattr(self.model, field.name)
 
@@ -236,7 +250,15 @@ class GraphQLModel():
 
         get_one_field = lower(casing.camel(self.name))
 
-        def get_many(obj, info, filters):
+        def get_many(obj, info, filters = {}):
+
+            # TODO get selected fields. Will require drilling into field nodes
+            # for n in info.field_nodes:
+            #     payload = [s for s in n.selection_set.selections if s.name.value == 'payload'][0]
+            #     nodes = [s for s in payload.selection_set.selections if s.name.value == 'nodes'][0]
+            #     fields = [s.name.value for s in nodes.selection_set.selections]
+
+
             result = self.model.get_many(filters=filters)
             return result
 
