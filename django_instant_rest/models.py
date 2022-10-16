@@ -36,6 +36,8 @@ class BaseModel(models.Model):
         result = {}
         for field in self._meta.fields:
 
+            field_name = field.name
+
             # Skipping hidden fields
             if field.name in self.Serializer.hidden_fields:
                 continue
@@ -53,8 +55,12 @@ class BaseModel(models.Model):
             # Handling relational fields 
             if hasattr(value, "id"):
                 value = value.id
+
+                if not field_name.endswith('_id'):
+                    field_name += '_id'
+
             
-            result[field.name] = value
+            result[field_name] = value
 
         return result
 

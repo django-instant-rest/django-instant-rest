@@ -31,6 +31,9 @@ class GraphQLField():
         self.name = field.name
         self.typename = gql_primitive(field, is_insertion)
         self.field = field
+
+        # if self.typename == 'ID' and not self.name.endswith('id'):
+        #     self.name += '_id'
     
     def as_insertion(self):
         return GraphQLField(self.field, True)
@@ -101,7 +104,8 @@ class GraphQLModel():
                 relation = getattr(self.model, field.name)
 
                 def resolver(obj, info):
-                    id = obj.get(field.name, None)
+                    field_name  = field.name if field.name.endswith('id') else field.name + '_id'
+                    id = obj.get(field_name, None)
                     result = relation.field.related_model.get_one(id = id)
                     return result['payload']
 
@@ -227,12 +231,14 @@ class GraphQLModel():
 
     def query_resolvers(self):
         def get_one(obj, info, id = None):
-            return self.model.get_one(id=id)
+            result = self.model.get_one(id=id)
+            return result
 
         get_one_field = lower(casing.camel(self.name))
 
         def get_many(obj, info, filters):
-            return self.model.get_many(filters=filters)
+            result = self.model.get_many(filters=filters)
+            return result
 
         get_many_field = f"{lower(casing.camel(self.name))}List"
 

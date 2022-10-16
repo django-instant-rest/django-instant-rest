@@ -14,3 +14,4 @@
 - Support GraphQL Subscriptions
 - Perhaps hide Django boilerplate
 - Document Unsupported [Fields](https://docs.djangoproject.com/en/4.1/ref/models/fields/)
+- Test that objects have consistent naming for foreign key fields for both get_one, and get_many.
