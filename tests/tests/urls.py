@@ -32,9 +32,6 @@ class GraphQLField():
         self.typename = gql_primitive(field, is_insertion)
         self.field = field
 
-        # if self.typename == 'ID' and not self.name.endswith('id'):
-        #     self.name += '_id'
-    
     def as_insertion(self):
         return GraphQLField(self.field, True)
     
@@ -48,8 +45,17 @@ class GraphQLInputField():
 class GraphQLBackwardsRel():
     def __init__(self, set):
         self.name = set.rel.related_name if set.rel.related_name else set.rel.name
-        self.typename = backwards_rel_type(set)
+        self.name = f"{self.name}List" if set.rel.multiple else self.name
+
+        typename = set.rel.related_model.__name__
+        self.typename = f"{typename}SearchResults" if set.rel.multiple else f"Single{typename}Result"
+
+        self.args = { 'filters': f'{typename}SearchFilters' } if set.rel.multiple else {}
         self.set = set
+
+    def stringify(self):
+        args = ", ".join([f"{k}: {v}" for k,v in self.args.items()])
+        return f"{self.name}({args}): {self.typename}"
 
 
 class GraphQLQueryType():
@@ -103,10 +109,11 @@ class GraphQLModel():
         for rel in self.rels:
             backward_field_name = rel.set.rel.field.name
 
-            def resolver(obj, info):
+            def resolver(obj, info, filters = {}):
                 required_filters = { backward_field_name: obj.get('id') }
-                result = rel.set.rel.related_model.get_many(filters=required_filters)
-                return result['payload']['nodes']
+                filters = { **filters, **required_filters, }
+                result = rel.set.rel.related_model.get_many(filters=filters)
+                return result
 
             obj_type.set_field(rel.name, resolver)
 
@@ -121,7 +128,7 @@ class GraphQLModel():
                     field_name  = field.name if field.name.endswith('id') else field.name + '_id'
                     id = obj.get(field_name, None)
                     result = relation.field.related_model.get_one(id = id)
-                    return result['payload']
+                    return result
 
                 obj_type.set_field(field.name, resolver)
 
@@ -130,7 +137,9 @@ class GraphQLModel():
 
     def stringify_type_def(self):
         gql_fields = [f"{f.name}: {f.typename}" for f in self.fields]
-        gql_rel_fields = [f"{f.name}: {f.typename}" for f in self.rels]
+
+        gql_rel_fields = [f.stringify() for f in self.rels]
+
         newline = "\n    "
 
         return (f"type {self.name} {{\n" 
@@ -222,8 +231,8 @@ class GraphQLModel():
 
             elif field_type in string_fields:
                 fields.append(GraphQLInputField(f'{f.name}', 'String'))
-                fields.append(GraphQLInputField(f'{f.name}__starts_with', 'String'))
-                fields.append(GraphQLInputField(f'{f.name}__ends_with', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__startswith', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__endswith', 'String'))
                 fields.append(GraphQLInputField(f'{f.name}__contains', 'String'))
 
             elif field_type in int_fields:
