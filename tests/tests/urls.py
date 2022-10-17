@@ -1,9 +1,32 @@
 
-from bookstore.models import *
+import bookstore.models as resources
+from inspect import getmembers, isclass
 from django_instant_rest import patterns, casing
+from django_instant_rest.models import RestResource
 from ariadne import gql, QueryType, MutationType, ObjectType, make_executable_schema
 from ariadne_django.views import GraphQLView
 from django.urls import path
+from django.db import models
+
+int_fields = [
+    models.IntegerField,
+    models.SmallIntegerField,
+    models.BigIntegerField,
+    models.PositiveIntegerField,
+    models.PositiveSmallIntegerField,
+    models.PositiveBigIntegerField,
+]
+
+float_fields = [
+    models.FloatField,
+    models.DecimalField,
+]
+
+string_fields = [
+    models.CharField,
+    models.TextField,
+    models.UUIDField,
+]
 
 def lower(string):
     return string[0].lower() + string[1:]
@@ -12,12 +35,16 @@ def gql_primitive(field, is_insertion = False):
     field_type = type(field)
     if field_type == models.BigAutoField:
         return 'ID'
+    elif field_type in int_fields:
+        return 'Int'
+    elif field_type in float_fields:
+        return 'Float'
+    elif field_type in string_fields:
+        return 'String'
     elif field_type == models.ForeignKey:
         return 'ID' if is_insertion else f"Single{field.related_model.__name__}Result"
     elif field_type == models.DateTimeField:
         return 'DateTime'
-    elif field_type == models.CharField:
-        return 'String'
 
     return 'String'
 
@@ -42,6 +69,15 @@ class GraphQLInputField():
         self.typename = typename
     
 
+def get_many_args(typename):
+    return {
+        'filters': f'{typename}SearchFilters',
+        'first': 'Int',
+        'last': 'Int',
+        'after': 'Cursor',
+        'before': 'Cursor',
+    }
+
 class GraphQLBackwardsRel():
     def __init__(self, set):
         self.name = set.rel.related_name if set.rel.related_name else set.rel.name
@@ -50,7 +86,7 @@ class GraphQLBackwardsRel():
         typename = set.rel.related_model.__name__
         self.typename = f"{typename}SearchResults" if set.rel.multiple else f"Single{typename}Result"
 
-        self.args = { 'filters': f'{typename}SearchFilters' } if set.rel.multiple else {}
+        self.args = { 'input': f"{typename}SearchCriteria" } if set.rel.multiple else {}
         self.set = set
 
     def stringify(self):
@@ -160,7 +196,7 @@ class GraphQLModel():
             # Get Many
             GraphQLQueryType(
                 name = f"{lower(casing.camel(self.name))}List",
-                args = { 'filters': f'{self.name}SearchFilters' },
+                args = { 'input': f'{self.name}SearchCriteria' },
                 output = f"{self.name}SearchResults"
             )
         ]
@@ -218,6 +254,7 @@ class GraphQLModel():
 
             if field_type == models.BigAutoField:
                 fields.append(GraphQLInputField(f.name, 'ID'))
+                fields.append(GraphQLInputField(f'{f.name}__in', '[ID]'))
 
             elif field_type == models.BooleanField:
                 fields.append(GraphQLInputField(f.name, 'Boolean'))
@@ -228,12 +265,14 @@ class GraphQLModel():
                 fields.append(GraphQLInputField(f'{f.name}__lt', 'DateTime'))
                 fields.append(GraphQLInputField(f'{f.name}__gte', 'DateTime'))
                 fields.append(GraphQLInputField(f'{f.name}__lte', 'DateTime'))
+                fields.append(GraphQLInputField(f'{f.name}__in', '[DateTime]'))
 
             elif field_type in string_fields:
                 fields.append(GraphQLInputField(f'{f.name}', 'String'))
                 fields.append(GraphQLInputField(f'{f.name}__startswith', 'String'))
                 fields.append(GraphQLInputField(f'{f.name}__endswith', 'String'))
                 fields.append(GraphQLInputField(f'{f.name}__contains', 'String'))
+                fields.append(GraphQLInputField(f'{f.name}__in', '[String]'))
 
             elif field_type in int_fields:
                 fields.append(GraphQLInputField(f.name, 'Int'))
@@ -241,6 +280,7 @@ class GraphQLModel():
                 fields.append(GraphQLInputField(f'{f.name}__lt', 'Int'))
                 fields.append(GraphQLInputField(f'{f.name}__gte', 'Int'))
                 fields.append(GraphQLInputField(f'{f.name}__lte', 'Int'))
+                fields.append(GraphQLInputField(f'{f.name}__in', '[Int]'))
 
             elif field_type in float_fields:
                 fields.append(GraphQLInputField(f.name, 'Float'))
@@ -248,6 +288,7 @@ class GraphQLModel():
                 fields.append(GraphQLInputField(f'{f.name}__lt', 'Float'))
                 fields.append(GraphQLInputField(f'{f.name}__gte', 'Float'))
                 fields.append(GraphQLInputField(f'{f.name}__lte', 'Float'))
+                fields.append(GraphQLInputField(f'{f.name}__in', '[Float]'))
 
         return GraphQLInputType(name=name, fields=fields)
 
@@ -259,7 +300,8 @@ class GraphQLModel():
 
         get_one_field = lower(casing.camel(self.name))
 
-        def get_many(obj, info, filters = {}):
+        # def get_many(obj, info, filters={}, first=None, last=None, after=None, before=None):
+        def get_many(obj, info, input = {}):
 
             # TODO get selected fields. Will require drilling into field nodes
             # for n in info.field_nodes:
@@ -267,9 +309,15 @@ class GraphQLModel():
             #     nodes = [s for s in payload.selection_set.selections if s.name.value == 'nodes'][0]
             #     fields = [s.name.value for s in nodes.selection_set.selections]
 
+            return self.model.get_many(**input)
 
-            result = self.model.get_many(filters=filters)
-            return result
+            # return self.model.get_many(
+            #     filters=filters,
+            #     first=first,
+            #     last=last,
+            #     after=after,
+            #     before=before
+            # )
 
         get_many_field = f"{lower(casing.camel(self.name))}List"
 
@@ -293,6 +341,7 @@ def make_type_defs(gql_models):
     # adding base types
     type_def = (
         "scalar DateTime\n\n"
+        "scalar Cursor\n\n"
         "type Error {\n"
         "    unique_name: String\n"
         "    message: String\n"
@@ -343,6 +392,16 @@ def make_type_defs(gql_models):
             "}\n\n"
         )
 
+        type_def += (
+            f"input {m.name}SearchCriteria {{\n"
+            f"    filters: {m.name}SearchFilters \n"
+            f"    first: Int\n"
+            f"    last: Int\n"
+            f"    before: Cursor\n"
+            f"    after: Cursor\n"
+            "}\n\n"
+        )
+
     type_def += ("type Query {\n" 
         f"    {indented_nl.join(query_types)}\n"
         "}\n"
@@ -361,7 +420,8 @@ def make_type_defs(gql_models):
     return type_def
 
 
-included_models = [Book, BookInventory, Author, InventoryLocation, Employee]
+included_models = [r for name, r in getmembers(resources) if isclass(r) and issubclass(r, RestResource) and r != RestResource]
+print('MODELS', included_models)
 gql_models = list(map(lambda m: GraphQLModel(m), included_models))
 type_defs = make_type_defs(gql_models)
 type_def_string = gql(type_defs)
@@ -386,7 +446,9 @@ schema = make_executable_schema(type_defs, query, mutation, other_resolvers)
 
 urlpatterns = [
     path("graphql/", GraphQLView.as_view(schema=schema)),
-    patterns.resource('authors', Author),
-    patterns.resource('books', Book),
-    patterns.client('customers', Customer),
+    patterns.resource('articles', resources.Article),
+    patterns.resource('article_topics', resources.ArticleTopic),
+    # patterns.resource('authors', Author),
+    # patterns.resource('books', Book),
+    # patterns.client('customers', Customer),
 ]
