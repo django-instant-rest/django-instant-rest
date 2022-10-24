@@ -421,7 +421,6 @@ def make_type_defs(gql_models):
 
 
 included_models = [r for name, r in getmembers(resources) if isclass(r) and issubclass(r, RestResource) and r != RestResource]
-print('MODELS', included_models)
 gql_models = list(map(lambda m: GraphQLModel(m), included_models))
 type_defs = make_type_defs(gql_models)
 type_def_string = gql(type_defs)
@@ -446,9 +445,7 @@ schema = make_executable_schema(type_defs, query, mutation, other_resolvers)
 
 urlpatterns = [
     path("graphql/", GraphQLView.as_view(schema=schema)),
-    patterns.resource('articles', resources.Article),
-    patterns.resource('article_topics', resources.ArticleTopic),
-    # patterns.resource('authors', Author),
-    # patterns.resource('books', Book),
-    # patterns.client('customers', Customer),
+    patterns.resource('authors', resources.Author),
+    patterns.resource('books', resources.Book),
+    patterns.client('customers', resources.Customer),
 ]
