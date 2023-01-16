@@ -146,11 +146,14 @@ class GraphQLModel():
 
         def backwards_rel_resolver(rel):
             def resolver(obj, info, input = {}):
-                backward_field_name = rel.set.rel.field.name
+
+                # Applying required filters
                 filters = input.get('filters', {})
-                required_filters = { backward_field_name: obj.get('id') }
-                filters = { **filters, **required_filters, }
-                result = rel.set.rel.related_model.get_many(**input, filters=filters)
+                backward_field_name = rel.set.rel.field.name
+                filters[backward_field_name] = obj.get('id')
+                input['filters'] = filters
+
+                result = rel.set.rel.related_model.get_many(**input)
                 return result
             return resolver
 
