@@ -465,8 +465,7 @@ def handle_seed_database(request):
 urlpatterns = [
     path("ecommerce/graphql/", GraphQLView.as_view(schema=schema)),
     path("ecommerce/seed", handle_seed_database),
-    # patterns.resource('authors', resources.Author),
-    # patterns.resource('books', resources.Book),
+    patterns.resource('products', resources.Product),
     # patterns.client('customers', resources.Customer),
 ]
 

@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models.fields import DateTimeField
+from django.db.models.fields import DateTimeField, UUIDField
 from django.utils.timezone import make_aware
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
@@ -128,7 +128,9 @@ def read_many(model, camel = False):
 def read_one(model, camel=False):
     def request_handler(request, id):
         try:
-            result = model.get_one(id=int(id))
+            id_field = model._meta.get_field('id')
+            clean_id = id if type(id_field) == UUIDField else int(id)
+            result = model.get_one(id=clean_id)
 
             if camel:
                 result= camel_keys(result)
@@ -194,7 +196,9 @@ def update_one(model, camel=False):
     def request_handler(request, id): 
         try:
             input = json.loads(request.body.decode("utf-8"))
-            input['id'] = int(id)
+            id_field = model._meta.get_field('id')
+            clean_id = id if type(id_field) == UUIDField else int(id)
+            input['id'] = clean_id
             if camel:
                 input = snake_keys(change_data)
 
@@ -216,7 +220,9 @@ def delete_one(model):
     @csrf_exempt
     def request_handler(request, id):
         try:
-            result = model.delete_one(id=int(id))
+            id_field = model._meta.get_field('id')
+            clean_id = id if type(id_field) == UUIDField else int(id)
+            result = model.delete_one(id=clean_id)
             return JsonResponse(result)
         except Exception as e:
             return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
