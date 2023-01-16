@@ -277,10 +277,10 @@ def authenticate(client_model):
             if not token:
                 # TODO
                 raise
-                
+
             return JsonResponse({ "data": { "token": token } })
 
         except Exception as inst:
             return JsonResponse({ 'errors': [incorrect_credentials_err] }, status=400)
-    
+
     return handler

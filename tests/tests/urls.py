@@ -1,5 +1,6 @@
 
-import bookstore.models as resources
+import ecommerce.models as resources
+from ecommerce.seed import seed_database
 from inspect import getmembers, isclass
 from django_instant_rest import patterns, casing
 from django_instant_rest.models import RestResource
@@ -7,6 +8,8 @@ from ariadne import gql, QueryType, MutationType, ObjectType, make_executable_sc
 from ariadne_django.views import GraphQLView
 from django.urls import path
 from django.db import models
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 int_fields = [
     models.IntegerField,
@@ -141,16 +144,18 @@ class GraphQLModel():
     def field_level_resolvers(self):
         obj_type = ObjectType(self.name)
 
-        # TODO allow filtering and pagination on backwards relations
-        for rel in self.rels:
-            backward_field_name = rel.set.rel.field.name
-
-            def resolver(obj, info, filters = {}):
+        def backwards_rel_resolver(rel):
+            def resolver(obj, info, input = {}):
+                backward_field_name = rel.set.rel.field.name
+                filters = input.get('filters', {})
                 required_filters = { backward_field_name: obj.get('id') }
                 filters = { **filters, **required_filters, }
-                result = rel.set.rel.related_model.get_many(filters=filters)
+                result = rel.set.rel.related_model.get_many(**input, filters=filters)
                 return result
+            return resolver
 
+        for rel in self.rels:
+            resolver = backwards_rel_resolver(rel)
             obj_type.set_field(rel.name, resolver)
 
 
@@ -302,6 +307,7 @@ class GraphQLModel():
 
         # def get_many(obj, info, filters={}, first=None, last=None, after=None, before=None):
         def get_many(obj, info, input = {}):
+            print('INPUT', input)
 
             # TODO get selected fields. Will require drilling into field nodes
             # for n in info.field_nodes:
@@ -443,9 +449,21 @@ for m in gql_models:
 schema = make_executable_schema(type_defs, query, mutation, other_resolvers)
 
 
+@csrf_exempt
+def handle_seed_database(request):
+    try:
+        seed_database()
+        return JsonResponse({ 'success': True })
+
+    except Exception as e:
+        return JsonResponse({ 'success': False, 'error': str(e) })
+
+
 urlpatterns = [
-    path("graphql/", GraphQLView.as_view(schema=schema)),
-    patterns.resource('authors', resources.Author),
-    patterns.resource('books', resources.Book),
-    patterns.client('customers', resources.Customer),
+    path("ecommerce/graphql/", GraphQLView.as_view(schema=schema)),
+    path("ecommerce/seed", handle_seed_database),
+    # patterns.resource('authors', resources.Author),
+    # patterns.resource('books', resources.Book),
+    # patterns.client('customers', resources.Customer),
 ]
+
