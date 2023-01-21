@@ -4,9 +4,9 @@ OBJECT_WITH_ID_DOES_NOT_EXIST = lambda id : {
     'is_internal': False,
 }
 
-DATABASE_CONSTRAINTS_VIOLATED = {
-    'unique_name': 'DATABASE_CONSTRAINTS_VIOLATED',
-    'message': "The data provided violates database constraints",
+DATABASE_INTEGRITY_VIOLATED = {
+    'unique_name': 'DATABASE_INTEGRITY_VIOLATED',
+    'message': "Database integrity has been violated",
     'is_internal': False,
 }
 
@@ -54,5 +54,11 @@ PAGINATION_DIRECTION_UNCLEAR = {
 PAGINATION_CURSOR_INVALID = {
     'unique_name': 'PAGINATION_CURSOR_INVALID',
     'message': 'Expected `first` or `last` to be a base-64 encoded string.',
+    'is_internal': False,
+}
+
+INVALID_JSON_RECEIVED = lambda e : {
+    'unique_name': 'INVALID_JSON_RECEIVED',
+    'message': e.msg,
     'is_internal': False,
 }

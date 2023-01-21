@@ -81,7 +81,7 @@ class BaseModel(models.Model):
 
 class RestResource(BaseModel):
     '''Represents a data type that is exposed by a REST API'''
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -323,8 +323,8 @@ class RestResource(BaseModel):
                     'errors': [],
                 }
         
-            except OperationalError:
-                return { 'payload': None, "errors": [DATABASE_CONSTRAINTS_VIOLATED] }
+            except OperationalError as e:
+                return { 'payload': None, "errors": [DATABASE_INTEGRITY_VIOLATED] }
 
             except Exception as e:
                 if 'base64' in str(e):
