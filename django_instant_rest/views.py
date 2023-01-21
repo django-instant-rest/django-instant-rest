@@ -32,7 +32,7 @@ invalid_after_param_err = {"message" : "Expected parameter 'after' to be a base6
 database_integrity_err = {"message" : "The data provided violates database constraints" }
 database_operation_err = {"message" : "Unable to read from the database. Migrations may not be current." }
 unknown_storage_err = { "message": "Unable to store the data provided" }
-incorrect_credentials_err = { "message" : "incorrect username/password combination" }
+incorrect_credentials_err = { "message" : "Incorrect username/password combination" }
 
 
 REGION = 'REQUEST_HANDLING'
@@ -62,7 +62,7 @@ def date_fields(model):
     '''
     def is_date_field(name):
         return type(getattr(model, name).field) == DateTimeField
-    
+
     field_names = [f.name for f in model._meta.fields]
     return list(filter(is_date_field, field_names))
 
@@ -116,12 +116,11 @@ def read_many(model, camel = False):
                 payload = camel_keys(payload)
 
             return JsonResponse({ 'payload': payload, 'errors': errors })
-        
+
         except Exception as e:
             error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
             return { "payload": None, "errors": [error] }
 
-    
     return request_handler
 
 
@@ -196,22 +195,20 @@ def update_one(model, camel=False):
     def request_handler(request, id): 
         try:
             input = json.loads(request.body.decode("utf-8"))
-            id_field = model._meta.get_field('id')
-            clean_id = id if type(id_field) == UUIDField else int(id)
-            input['id'] = clean_id
-            if camel:
-                input = snake_keys(change_data)
-
         except Exception as e:
             return JsonResponse({ "payload": None, "errors": [invalid_json_err] })
 
         try:
+            id_field = model._meta.get_field('id')
+            clean_id = id if type(id_field) == UUIDField else int(id)
+            input['id'] = clean_id
+            if camel:
+                input = snake_keys(input)
             return JsonResponse(model.update_one(**input))
+
         except Exception as e:
             error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
             return JsonResponse({ "payload": None, "errors": [error] })
-
-
 
     return request_handler
 
@@ -221,11 +218,16 @@ def delete_one(model):
     def request_handler(request, id):
         try:
             id_field = model._meta.get_field('id')
+        except Exception as e:
+            return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
+
+        try:
             clean_id = id if type(id_field) == UUIDField else int(id)
             result = model.delete_one(id=clean_id)
             return JsonResponse(result)
         except Exception as e:
-            return JsonResponse({ "payload": None, "errors": [id_not_exists_err] })
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return JsonResponse({ "payload": None, "errors": [error] })
 
     return request_handler
 
