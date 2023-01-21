@@ -62,3 +62,21 @@ INVALID_JSON_RECEIVED = lambda e : {
     'message': e.msg,
     'is_internal': False,
 }
+
+INVALID_AUTH_ATTEMPT = lambda username_field, password_field : {
+    'unique_name': 'INVALID_AUTH_ATTEMPT',
+    'message': f'Expected a JSON object with "{username_field}" and "{password_field}" as keys',
+    'is_internal': False,
+}
+
+INCORRECT_AUTH_CREDENTIALS = {
+    'unique_name': 'INCORRECT_AUTH_CREDENTIALS',
+    'message': 'The authentication credentials were incorrect',
+    'is_internal': False,
+}
+
+NON_UNIQUE_USERNAME_FIELD = lambda model: {
+    'unique_name': 'NON_UNIQUE_USERNAME_FIELD',
+    'message': f'The {model.name} model is not set up correctly. The field {model.Auth.username_field} must be unique.',
+    'is_internal': False,
+}

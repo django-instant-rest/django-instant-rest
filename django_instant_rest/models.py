@@ -1,12 +1,12 @@
 from .pagination import paginate, encode_cursor
 from .casing import camel_keys, snake_keys
 from .errors import *
-from argon2 import PasswordHasher
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.db import OperationalError
 import datetime
+import argon2
 import uuid
 import jwt
 
@@ -343,14 +343,18 @@ class RestResource(BaseModel):
 
 class RestClient(BaseModel):
     '''Represents a human or program that is a consumer of a REST API'''
-    username = models.CharField(max_length=32, unique=True, blank=False)
-    password = models.CharField(max_length=512, blank=False)
 
     class Meta:
         abstract = True
-    
-    class Hashing:
+
+    # TODO document the following:
+    # Overriding this class means that every property needs to be provided!
+    # username_field must be unique and not blank.
+    # password_field must be not blank.
+    class Auth:
         secret_key = ''
+        username_field = 'username'
+        password_field = 'password'
 
     def save(self, *args, **input):
         '''Saving the model instance, but first hashing the
@@ -361,15 +365,35 @@ class RestClient(BaseModel):
     def verify_password(self, password):
         '''Determine whether a given hashed password belongs
         to this model instance'''
-        return PasswordHasher().verify(self.password, password)
+        try:
+            actual_password = getattr(self, self.Auth.password_field)
+            argon2.PasswordHasher().verify(actual_password, password)
+            return { "payload": True, "errors": [] }
+        except argon2.exceptions.VerifyMismatchError:
+            return { "payload": False, "errors": [] }
+        except Exception as e:
+            error = FAILED_UNEXPECTEDLY('verifying password', region = 'AUTHENTICATION', exception = e)
+            return { "payload": None, "errors": [error] }
 
     def authenticate(self, password):
         '''Generate a JWT if the provided password is correct,
         and None if it was incorrect'''
-        if self.verify_password(password):
-            payload = self.to_dict()
-            return jwt.encode(payload, self.Hashing.secret_key, algorithm='HS256')
-        else:
-            return None
+        try:
+            verification = self.verify_password(password)
+            is_correct = verification.get("payload", None)
+            errors = verification.get("errors", [])
+
+            if len(errors):
+                return { "payload": None, "errors": errors }
+
+            if is_correct:
+                self_as_dict= self.to_dict()
+                token = jwt.encode(self_as_dict, self.Auth.secret_key, algorithm='HS256')
+                return { "payload": token, "errors": [] }
+            else:
+                return { "payload": None, "errors": [INCORRECT_AUTH_CREDENTIALS] }
+        except Exception as e:
+                error = FAILED_UNEXPECTEDLY(action = 'encoding auth token', region = 'AUTHENTICATION', exception = e)
+                return { "payload": None, "errors": [error] }
 
 

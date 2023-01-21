@@ -30,7 +30,7 @@ def resource(name, model, middleware = None, camel=False):
 
 # Create a request handler that allows REST clients to authenticate.
 # In the future, it may be associated with additional actions.
-def client(name, client_model, middleware=None):
+def client(name, client_model, middleware=None, camel=False):
     route = rf"^{name}/authenticate$"
 
     if not middleware:

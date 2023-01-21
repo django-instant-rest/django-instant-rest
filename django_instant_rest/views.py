@@ -262,30 +262,47 @@ def resource(model, camel=False):
 
     return request_handler
 
-
 def authenticate(client_model):
     @csrf_exempt
     def handler(request):
         '''Allows requesters to provide username/password
         combinations in exchange for a json web token'''
         try:
-            credentials = json.loads(request.body.decode("utf-8"))
+            body = request.body.decode("utf-8")
+            creds = json.loads(body)
 
-        except:
-            message = "expected POST request with json body"
-            return JsonResponse({ 'error': message }, status=400)
+            filters = {}
+            username_field = client_model.Auth.username_field
+            password_field = client_model.Auth.password_field
 
-        try:
-            c = client_model.objects.get(username=credentials["username"])
-            token = c.authenticate(credentials["password"])
+            if not username_field in creds or not password_field in creds:
+                e = INVALID_AUTH_ATTEMPT(username_field, password_field)
+                return JsonResponse({ "payload": None, "errors": [e] })
 
-            if not token:
-                # TODO
-                raise
+            filters[username_field] = creds.get(username_field, None)
 
-            return JsonResponse({ "data": { "token": token } })
 
-        except Exception as inst:
-            return JsonResponse({ 'errors': [incorrect_credentials_err] }, status=400)
+            c = client_model.objects.get(**filters)
+            auth_result = c.authenticate(creds[password_field])
+            token = auth_result.get("payload", None)
+            errors = auth_result.get("errors", [])
+
+            if len(errors):
+                return JsonResponse({ "payload": None, "errors": errors })
+
+            return JsonResponse({ "payload": { "token": token }, "errors": [] })
+
+        except client_model.DoesNotExist as e:
+            return JsonResponse({ "payload": None, "errors": [INCORRECT_AUTH_CREDENTIALS] }, status=400)
+
+        except client_model.MultipleObjectsReturned as e:
+            error = NON_UNIQUE_USERNAME_FIELD(client_model)
+            return JsonResponse({ "payload": None, "errors": [error] }, status=500)
+        except json.JSONDecodeError as e:
+            return JsonResponse({ "payload": None, "errors": [INVALID_JSON_RECEIVED(e)] }, status=400)
+
+        except Exception as e:
+            error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
+            return JsonResponse({ "payload": None, "errors": [error] }, status=500)
 
     return handler
