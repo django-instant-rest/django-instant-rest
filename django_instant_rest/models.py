@@ -295,8 +295,16 @@ class RestResource(BaseModel):
 
                 # Getting cursor information
                 nodes = list(pagination['queryset'])
+
                 first_cursor = None if not len(nodes) else encode_cursor(nodes[0])
                 last_cursor = None if not len(nodes) else encode_cursor(nodes[-1])
+
+                # Removing hidden fields, because pagination.
+                # Normally, this would happen in `cls.to_dict()`,
+                # but pagination returns objects already as dicts.
+                for node in nodes:
+                    for field_name in cls.Serializer.hidden_fields:
+                        node.pop(field_name)
 
                 # Adding pseudo-fields
                 if 'cursor' in input.get('pseudo_fields', []):
@@ -359,7 +367,7 @@ class RestClient(BaseModel):
     def save(self, *args, **input):
         '''Saving the model instance, but first hashing the
         plaintext password stored in its `password` field'''
-        self.password = PasswordHasher().hash(self.password)
+        self.password = argon2.PasswordHasher().hash(self.password)
         super(RestClient, self).save(*args, **input)
 
     def verify_password(self, password):
