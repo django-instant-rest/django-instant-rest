@@ -69,6 +69,12 @@ INVALID_AUTH_ATTEMPT = lambda username_field, password_field : {
     'is_internal': False,
 }
 
+INVALID_AUTHORIZATION_HEADER = {
+    'unique_name': 'INVALID_AUTHORIZATION_HEADER',
+    'message': 'The `Authorization` header value should be in the form of: `Bearer <INSERT_AUTH_TOKEN_HERE>`',
+    'is_internal': False,
+}
+
 INCORRECT_AUTH_CREDENTIALS = {
     'unique_name': 'INCORRECT_AUTH_CREDENTIALS',
     'message': 'The authentication credentials were incorrect',

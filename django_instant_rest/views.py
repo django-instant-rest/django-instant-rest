@@ -249,6 +249,10 @@ def resource(model, camel=False):
 
         if auth and secret_key:
             try:
+                if not auth.startswith('Bearer '):
+                    error = INVALID_AUTHORIZATION_HEADER
+                    return JsonResponse({ "payload": None, "errors": [error] })
+
                 token = auth.replace('Bearer ', '')
                 claims = jwt.decode(token, secret_key, algorithms=["HS256"])
                 request._auth_claims = claims
