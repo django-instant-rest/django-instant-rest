@@ -105,8 +105,13 @@ def read_many(model, camel = False):
                 'filters': params,
             }
 
+            input = {
+                **get_many_args,
+                "auth_claims": request.auth_claims,
+            }
+
             # Collecting filter parameters
-            results = model.get_many(**get_many_args)
+            results = model.get_many(**input)
             payload = results['payload']
             errors = results['errors']
 
@@ -128,7 +133,13 @@ def read_one(model, camel=False):
         try:
             id_field = model._meta.get_field('id')
             clean_id = id if type(id_field) == UUIDField else int(id)
-            result = model.get_one(id=clean_id)
+
+            input = {
+                "id": clean_id,
+                "auth_claims": request.auth_claims,
+            }
+
+            result = model.get_one(**input)
 
             if camel:
                 result= camel_keys(result)
@@ -151,7 +162,12 @@ def create_one(model, camel=False):
             if camel:
                 fields = snake_keys(fields)
 
-            result = model.create_one(**fields)
+            input = {
+                **fields,
+                "auth_claims": request.auth_claims,
+            }
+
+            result = model.create_one(**input)
             payload = result['payload']
             errors = result['errors']
 
@@ -199,6 +215,11 @@ def update_one(model, camel=False):
             if camel:
                 input = snake_keys(input)
 
+            input = {
+                **input,
+                "auth_claims": request.auth_claims,
+            }
+
             result = model.update_one(**input)
 
             if camel:
@@ -226,7 +247,13 @@ def delete_one(model, camel=False):
 
         try:
             clean_id = id if type(id_field) == UUIDField else int(id)
-            result = model.delete_one(id=clean_id)
+
+            input = {
+                "id": clean_id,
+                "auth_claims": request.auth_claims,
+            }
+
+            result = model.delete_one(**input)
 
             if camel:
                 result = camel_keys(result)
@@ -255,7 +282,7 @@ def resource(model, camel=False):
 
                 token = auth.replace('Bearer ', '')
                 claims = jwt.decode(token, secret_key, algorithms=["HS256"])
-                request._auth_claims = claims
+                request.auth_claims = claims
             except jwt.exceptions.InvalidSignatureError as e:
                 error = INVALID_AUTH_SIGNATURE
                 return JsonResponse({ "payload": None, "errors": [error] })

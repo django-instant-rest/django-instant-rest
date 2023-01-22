@@ -46,7 +46,6 @@ def paginate(queryset, first, last, after=None, before=None):
             if after is None:
                 page_plus_one = queryset.all()[:first+1]
                 page = page_plus_one[:first]
-                print(type(page), page)
                 return {
                     "queryset": page,
                     "has_prev_page": False,

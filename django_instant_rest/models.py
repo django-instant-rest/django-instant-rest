@@ -148,6 +148,9 @@ class RestResource(BaseModel):
             id = input.get('id', None)
 
             try:
+                # Removing non-field input
+                input.pop('auth_claims', None)
+
                 model_instance = cls.objects.get(id=id)
                 model_instance.delete()
                 payload = model_instance.to_dict()
@@ -159,7 +162,7 @@ class RestResource(BaseModel):
             except Exception as e:
                 error = FAILED_UNEXPECTEDLY('deleting an object', region = REGION, exception = e)
                 return { "payload": None, "errors": [error] }
-        
+
         return cls.with_hooks(inner_fn, 'delete_one')(**input)
 
 
@@ -169,8 +172,10 @@ class RestResource(BaseModel):
         
         def inner_fn(**input):
             try:
-                model_instance = cls.objects.get(id=input.get('id', None))
+                # Removing non-field input
+                input.pop('auth_claims', None)
 
+                model_instance = cls.objects.get(id=input.get('id', None))
                 for key in input:
                     field = getattr(cls, key)
 
@@ -215,6 +220,9 @@ class RestResource(BaseModel):
 
         def inner_fn(**input):
             try:
+                # Removing non-field input
+                input.pop('auth_claims', None)
+
                 for key in input:
                     field = getattr(cls, key)
 
@@ -247,6 +255,9 @@ class RestResource(BaseModel):
 
         def inner_fn(**input):
             try:
+                # Removing non-field input
+                input.pop('auth_claims', None)
+
                 id = input.get('id', None)
                 model_instance = cls.objects.get(id=id)
                 return { 'payload': model_instance.to_dict(), 'errors': [] }
@@ -267,6 +278,9 @@ class RestResource(BaseModel):
 
         def inner_fn(**input):
             try:
+                # Removing non-field input
+                input.pop('auth_claims', None)
+
                 # Building a queryset using filtering and ordering params
                 filters = input.get('filters', {})
                 order_by = input.get('order_by', [])
