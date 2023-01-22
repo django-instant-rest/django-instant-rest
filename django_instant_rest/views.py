@@ -110,7 +110,7 @@ def read_many(model, camel = False):
 
             input = {
                 **get_many_args,
-                "auth_claims": request.auth_claims,
+                "auth_claims": getattr(request, 'auth_claims', None),
             }
 
             # Collecting filter parameters
@@ -126,7 +126,7 @@ def read_many(model, camel = False):
 
         except Exception as e:
             error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
-            return { "payload": None, "errors": [error] }
+            return JsonResponse({ "payload": None, "errors": [error] })
 
     return request_handler
 
@@ -139,7 +139,7 @@ def read_one(model, camel=False):
 
             input = {
                 "id": clean_id,
-                "auth_claims": request.auth_claims,
+                "auth_claims": getattr(request, 'auth_claims', None),
             }
 
             result = model.get_one(**input)
@@ -151,7 +151,7 @@ def read_one(model, camel=False):
 
         except Exception as e:
             error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
-            return { "payload": None, "errors": [error] }
+            return JsonResponse({ "payload": None, "errors": [error] })
 
     return request_handler
 
@@ -167,7 +167,7 @@ def create_one(model, camel=False):
 
             input = {
                 **fields,
-                "auth_claims": request.auth_claims,
+                "auth_claims": getattr(request, 'auth_claims', None),
             }
 
             result = model.create_one(**input)
@@ -220,7 +220,7 @@ def update_one(model, camel=False):
 
             input = {
                 **input,
-                "auth_claims": request.auth_claims,
+                "auth_claims": getattr(request, 'auth_claims', None),
             }
 
             result = model.update_one(**input)
@@ -253,7 +253,7 @@ def delete_one(model, camel=False):
 
             input = {
                 "id": clean_id,
-                "auth_claims": request.auth_claims,
+                "auth_claims": getattr(request, 'auth_claims', None),
             }
 
             result = model.delete_one(**input)
@@ -275,7 +275,7 @@ def resource(model, camel=False):
     def request_handler(request, id=None):
 
         auth = request.headers.get('Authorization', None)
-        secret_key = request._secret_key
+        secret_key = getattr(request, '_secret_key', None)
 
         if auth and secret_key:
             try:
