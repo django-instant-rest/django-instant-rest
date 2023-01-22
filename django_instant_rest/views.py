@@ -72,6 +72,9 @@ def read_many(model, camel = False):
             params = { key: request.GET.get(key) for key in request.GET }
             queryset = None
 
+            if (camel):
+                params = snake_keys(params)
+
             # Parsing datestrings found in params
             for key in params:
                 for field in date_fields(model):
