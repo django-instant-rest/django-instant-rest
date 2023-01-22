@@ -243,6 +243,22 @@ def delete_one(model, camel=False):
 def resource(model, camel=False):
     @csrf_exempt
     def request_handler(request, id=None):
+
+        auth = request.headers.get('Authorization', None)
+        secret_key = request._secret_key
+
+        if auth and secret_key:
+            try:
+                token = auth.replace('Bearer ', '')
+                claims = jwt.decode(token, secret_key, algorithms=["HS256"])
+                request._auth_claims = claims
+            except jwt.exceptions.InvalidSignatureError as e:
+                error = INVALID_AUTH_SIGNATURE
+                return JsonResponse({ "payload": None, "errors": [error] })
+            except Exception as e:
+                error = FAILED_UNEXPECTEDLY(action = 'applying auth token', region = 'AUTHENTICATION', exception = e)
+                return JsonResponse({ "payload": None, "errors": [error] })
+
         # POST
         if request.method =='POST':
             return create_one(model, camel)(request)

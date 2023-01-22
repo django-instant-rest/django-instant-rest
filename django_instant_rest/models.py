@@ -395,8 +395,9 @@ class RestClient(BaseModel):
                 return { "payload": None, "errors": errors }
 
             if is_correct:
-                self_as_dict= self.to_dict()
-                token = jwt.encode(self_as_dict, self.Auth.secret_key, algorithm='HS256')
+                model_name = self.__class__.__name__
+                claims = { f"{model_name}": self.to_dict() }
+                token = jwt.encode(claims, self.Auth.secret_key, algorithm='HS256')
                 return { "payload": token, "errors": [] }
             else:
                 return { "payload": None, "errors": [INCORRECT_AUTH_CREDENTIALS] }

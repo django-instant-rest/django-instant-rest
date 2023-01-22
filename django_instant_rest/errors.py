@@ -75,6 +75,12 @@ INCORRECT_AUTH_CREDENTIALS = {
     'is_internal': False,
 }
 
+INVALID_AUTH_SIGNATURE = {
+    'unique_name': 'INVALID_AUTH_SIGNATURE',
+    'message': 'The provided auth token does not have a valid signature.',
+    'is_internal': False,
+}
+
 NON_UNIQUE_USERNAME_FIELD = lambda model: {
     'unique_name': 'NON_UNIQUE_USERNAME_FIELD',
     'message': f'The {model.name} model is not set up correctly. The field {model.Auth.username_field} must be unique.',
