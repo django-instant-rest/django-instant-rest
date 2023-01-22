@@ -198,7 +198,13 @@ def update_one(model, camel=False):
             input['id'] = clean_id
             if camel:
                 input = snake_keys(input)
-            return JsonResponse(model.update_one(**input))
+
+            result = model.update_one(**input)
+
+            if camel:
+                result = camel_keys(result)
+
+            return JsonResponse(result)
 
         except json.JSONDecodeError as e:
             return JsonResponse({ "payload": None, "errors": [INVALID_JSON_RECEIVED(e)] })
@@ -210,7 +216,7 @@ def update_one(model, camel=False):
     return request_handler
 
 
-def delete_one(model):
+def delete_one(model, camel=False):
     @csrf_exempt
     def request_handler(request, id):
         try:
@@ -221,7 +227,12 @@ def delete_one(model):
         try:
             clean_id = id if type(id_field) == UUIDField else int(id)
             result = model.delete_one(id=clean_id)
+
+            if camel:
+                result = camel_keys(result)
+
             return JsonResponse(result)
+
         except Exception as e:
             error = FAILED_UNEXPECTEDLY(action = ACTION, region = REGION, exception = e)
             return JsonResponse({ "payload": None, "errors": [error] })
@@ -253,7 +264,7 @@ def resource(model, camel=False):
         # DELETE
         elif request.method =='DELETE':
             if id:
-                return delete_one(model)(request, id)
+                return delete_one(model, camel)(request, id)
             else:
                 return JsonResponse({"errors": [missing_id_err]})
 
