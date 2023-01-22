@@ -33,7 +33,6 @@ database_operation_err = {"message" : "Unable to read from the database. Migrati
 unknown_storage_err = { "message": "Unable to store the data provided" }
 incorrect_credentials_err = { "message" : "Incorrect username/password combination" }
 
-
 REGION = 'REQUEST_HANDLING'
 ACTION = 'interpreting HTTP requests'
 
@@ -243,6 +242,7 @@ def update_one(model, camel=False):
 def delete_one(model, camel=False):
     @csrf_exempt
     def request_handler(request, id):
+        # TODO is this try block necessary?
         try:
             id_field = model._meta.get_field('id')
         except Exception as e:
@@ -286,9 +286,11 @@ def resource(model, camel=False):
                 token = auth.replace('Bearer ', '')
                 claims = jwt.decode(token, secret_key, algorithms=["HS256"])
                 request.auth_claims = claims
+
             except jwt.exceptions.InvalidSignatureError as e:
                 error = INVALID_AUTH_SIGNATURE
                 return JsonResponse({ "payload": None, "errors": [error] })
+
             except Exception as e:
                 error = FAILED_UNEXPECTEDLY(action = 'applying auth token', region = 'AUTHENTICATION', exception = e)
                 return JsonResponse({ "payload": None, "errors": [error] })
@@ -359,6 +361,7 @@ def authenticate(client_model):
         except client_model.MultipleObjectsReturned as e:
             error = NON_UNIQUE_USERNAME_FIELD(client_model)
             return JsonResponse({ "payload": None, "errors": [error] }, status=500)
+
         except json.JSONDecodeError as e:
             return JsonResponse({ "payload": None, "errors": [INVALID_JSON_RECEIVED(e)] }, status=400)
 
